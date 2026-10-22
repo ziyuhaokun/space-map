@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Space.Map.Core</RootNamespace>
+    <AssemblyName>Space.Map.Core</AssemblyName>
+    <Description>Core disk scanning engine and models for Space.Map</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Space.Map.Core.Tests" />
+  </ItemGroup>
+
+</Project>

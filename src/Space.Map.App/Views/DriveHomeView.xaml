@@ -1,0 +1,147 @@
+<UserControl x:Class="Space.Map.App.Views.DriveHomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <DockPanel>
+        <Grid Margin="0,0,0,12"
+              DockPanel.Dock="Top">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center"
+                           FontSize="16"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                           Text="{DynamicResource DriveHome_Title}" />
+                <TextBlock Margin="12,0,0,0"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                           Text="{DynamicResource DriveHome_Subtitle}" />
+            </StackPanel>
+            <ui:Button HorizontalAlignment="Right"
+                       Command="{Binding DriveHome.RefreshDrivesCommand}"
+                       Content="{DynamicResource DriveHome_Refresh}"
+                       Style="{StaticResource SecondaryCommandButtonStyle}" />
+        </Grid>
+
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <ItemsControl ItemsSource="{Binding DriveHome.Drives}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Width="280"
+                                Margin="0,0,12,12"
+                                Padding="14"
+                                Background="{DynamicResource ControlFillColorSecondaryBrush}"
+                                BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
+                                BorderThickness="1"
+                                CornerRadius="10">
+                            <Border.InputBindings>
+                                <MouseBinding Command="{Binding DataContext.DriveHome.ScanDriveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                              CommandParameter="{Binding}"
+                                              MouseAction="LeftDoubleClick" />
+                            </Border.InputBindings>
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <Grid>
+                                    <StackPanel>
+                                        <TextBlock FontSize="15"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{DynamicResource TextFillColorPrimaryBrush}"
+                                                   Text="{Binding DisplayName}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Margin="0,2,0,0"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Text="{Binding RootPath}" />
+                                    </StackPanel>
+                                    <TextBlock HorizontalAlignment="Right"
+                                               VerticalAlignment="Top"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Text="{Binding StatusLabel}" />
+                                </Grid>
+
+                                <TextBlock Grid.Row="1"
+                                           Margin="0,10,0,0"
+                                           FontSize="12"
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           Text="{Binding DisplayTypeAndFormat}" />
+
+                                <Grid Grid.Row="2"
+                                      Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Text="{DynamicResource DriveHome_Used}" />
+                                        <TextBlock FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#FF66A6FF"
+                                                   Text="{Binding UsedSizeText}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                                   Text="{DynamicResource DriveHome_Free}" />
+                                        <TextBlock FontSize="13"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource ShellGreenBrush}"
+                                                   Text="{Binding FreeSizeText}" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <Grid Grid.Row="3"
+                                      Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <ProgressBar Height="6"
+                                                 Maximum="100"
+                                                 Minimum="0"
+                                                 Value="{Binding UsedPercent}" />
+                                    <TextBlock Grid.Column="1"
+                                               Margin="8,0,0,0"
+                                               VerticalAlignment="Center"
+                                               FontSize="11"
+                                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                               Text="{Binding TotalSizeText, StringFormat=共 {0}}" />
+                                </Grid>
+
+                                <StackPanel Grid.Row="4"
+                                            Margin="0,12,0,0"
+                                            HorizontalAlignment="Right"
+                                            Orientation="Horizontal">
+                                    <ui:Button Command="{Binding DataContext.DriveHome.SelectDriveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               CommandParameter="{Binding}"
+                                               Content="{DynamicResource DriveHome_Select}"
+                                               Style="{StaticResource SecondaryCommandButtonStyle}" />
+                                    <ui:Button Margin="8,0,0,0"
+                                               Command="{Binding DataContext.DriveHome.ScanDriveCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                               CommandParameter="{Binding}"
+                                               Content="{DynamicResource DriveHome_Scan}"
+                                               IsEnabled="{Binding CanScan}"
+                                               Style="{StaticResource PrimaryCommandButtonStyle}" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </DockPanel>
+</UserControl>

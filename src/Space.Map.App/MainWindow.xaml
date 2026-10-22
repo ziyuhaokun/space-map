@@ -1,0 +1,67 @@
+<ui:FluentWindow x:Class="Space.Map.App.MainWindow"
+                 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+                 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+                 xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+                 xmlns:views="clr-namespace:Space.Map.App.Views"
+                 mc:Ignorable="d"
+                 Title="Space.Map"
+                 Height="900"
+                 MinHeight="720"
+                 Width="1420"
+                 MinWidth="1100"
+                 Icon="pack://application:,,,/Assets/space.map-logo.png"
+                 ExtendsContentIntoTitleBar="True"
+                 WindowBackdropType="Mica"
+                 WindowCornerPreference="Round"
+                 WindowStartupLocation="CenterScreen">
+    <Grid Background="{DynamicResource ApplicationBackgroundBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="48" />
+        </Grid.RowDefinitions>
+
+        <views:AppTitleBar Grid.Row="0" />
+
+        <Grid Grid.Row="1"
+              Margin="6">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="140" />
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0"
+                    Margin="6"
+                    Padding="6"
+                    Style="{StaticResource ShellPanelStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <views:ScanToolbar Grid.Row="0" />
+
+                    <views:BreadcrumbBar Grid.Row="1"
+                                         Margin="0,8,0,0" />
+
+                    <Grid Grid.Row="2"
+                          MinHeight="390"
+                          Margin="0,8,0,0">
+                        <views:DriveHomeView Visibility="{Binding IsDriveHomeVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+                        <views:ScanWorkspaceView Visibility="{Binding IsWorkspaceContentVisible, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <views:NodeDetailPanel Grid.Row="1"
+                                   Margin="6" />
+        </Grid>
+
+        <views:StatusBarView Grid.Row="2" />
+    </Grid>
+</ui:FluentWindow>

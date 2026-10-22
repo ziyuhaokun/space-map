@@ -1,0 +1,28 @@
+<UserControl x:Class="Space.Map.App.Views.BreadcrumbBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <ItemsControl ItemsSource="{Binding Navigation.Breadcrumbs}"
+                  Visibility="{Binding Navigation.HasScanResult, Converter={StaticResource BooleanToVisibilityConverter}}">
+        <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+                <StackPanel Orientation="Horizontal" />
+            </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemTemplate>
+            <DataTemplate>
+                <StackPanel Margin="0,0,4,0"
+                            Orientation="Horizontal">
+                    <ui:Button Command="{Binding DataContext.Navigation.NavigateToBreadcrumbCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                               CommandParameter="{Binding Index}"
+                               Content="{Binding Name}"
+                               Style="{StaticResource BreadcrumbButtonStyle}" />
+                    <TextBlock Margin="4,0,0,0"
+                               VerticalAlignment="Center"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Text="›" />
+                </StackPanel>
+            </DataTemplate>
+        </ItemsControl.ItemTemplate>
+    </ItemsControl>
+</UserControl>

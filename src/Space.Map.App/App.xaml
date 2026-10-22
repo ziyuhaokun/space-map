@@ -1,0 +1,19 @@
+<Application x:Class="Space.Map.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:Space.Map.App.Converters"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemesDictionary Theme="Light" />
+                <ui:ControlsDictionary />
+                <ResourceDictionary Source="Themes/ShellStyles.xaml" />
+                <ResourceDictionary Source="Resources/Strings.en-US.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:ChartPaletteBrushConverter x:Key="ChartPaletteBrushConverter" />
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -1,0 +1,30 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Space.Map</RootNamespace>
+    <AssemblyName>Space.Map</AssemblyName>
+    <ApplicationIcon>Assets\space.map.ico</ApplicationIcon>
+    <ApplicationTitle>Space.Map</ApplicationTitle>
+    <Product>Space.Map</Product>
+    <AssemblyTitle>Space.Map</AssemblyTitle>
+    <Description>Windows disk space visualizer</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Space.Map.Core\Space.Map.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Costura.Fody" PrivateAssets="all" />
+    <PackageReference Include="WPF-UI" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\space.map-logo.png" />
+  </ItemGroup>
+
+</Project>

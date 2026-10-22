@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title description">
+  <title id="title">Space.Map Radial Map Badge</title>
+  <desc id="description">A standalone circular black and white radial storage map with a transparent outer canvas.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="7" stdDeviation="8" flood-color="#000000" flood-opacity="0.20"/>
+    </filter>
+    <clipPath id="diskClip">
+      <circle cx="128" cy="128" r="84"/>
+    </clipPath>
+  </defs>
+
+  <circle cx="128" cy="128" r="108" fill="#FFFFFF" stroke="#000000" stroke-width="10" filter="url(#shadow)"/>
+  <circle cx="128" cy="128" r="84" fill="#000000"/>
+  <g clip-path="url(#diskClip)" fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-width="7">
+    <circle cx="128" cy="128" r="48"/>
+    <path d="M128 80V42"/>
+    <path d="M162 94 194 67"/>
+    <path d="M175 143 211 153"/>
+    <path d="M141 174 151 210"/>
+    <path d="M94 162 67 191"/>
+    <path d="M81 116 43 106"/>
+    <path d="M128 106V80"/>
+    <path d="M145 113 162 94"/>
+    <path d="M149 135 175 143"/>
+    <path d="M136 149 141 174"/>
+    <path d="M111 142 94 162"/>
+    <path d="M106 123 81 116"/>
+  </g>
+  <circle cx="128" cy="128" r="22" fill="#FFFFFF"/>
+  <circle cx="128" cy="128" r="7" fill="#000000"/>
+</svg>

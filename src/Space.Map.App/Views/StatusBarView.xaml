@@ -1,0 +1,155 @@
+<UserControl x:Class="Space.Map.App.Views.StatusBarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
+    <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1">
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Disabled">
+            <Grid Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="1" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <Grid Grid.Column="0"
+                      MinWidth="320"
+                      MaxWidth="380"
+                      VerticalAlignment="Center">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:SymbolIcon Foreground="{StaticResource ShellGreenBrush}"
+                                       Symbol="CheckmarkCircle24" />
+                        <TextBlock Style="{StaticResource StatusValueStyle}"
+                                   Text="{Binding Scan.StatusText}" />
+                    </StackPanel>
+                    <TextBlock Grid.Row="1"
+                               Margin="20,0,0,0"
+                               FontSize="11"
+                               Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                               Text="{Binding Scan.SelectedPath}"
+                               TextTrimming="CharacterEllipsis"
+                               ToolTipService.ToolTip="{Binding Scan.SelectedPath}" />
+                </Grid>
+                <Border Grid.Column="1"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="2"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="{DynamicResource Status_Elapsed}" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.Elapsed}" />
+                </StackPanel>
+                <Border Grid.Column="3"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="4"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="{DynamicResource Status_Skipped}" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.SkippedCount}" />
+                </StackPanel>
+                <Border Grid.Column="5"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="6"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <ui:SymbolIcon Foreground="#FF66A6FF"
+                                   Symbol="DataPie24" />
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="总大小" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.TotalSize}" />
+                </StackPanel>
+                <Border Grid.Column="7"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="8"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <ui:SymbolIcon Foreground="{StaticResource ShellGreenBrush}"
+                                   Symbol="Database24" />
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="已统计" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.ScannedBytes}" />
+                </StackPanel>
+                <Border Grid.Column="9"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="10"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <ui:SymbolIcon Foreground="{StaticResource ShellPurpleBrush}"
+                                   Symbol="Document24" />
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="文件" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.ScannedFiles}" />
+                </StackPanel>
+                <Border Grid.Column="11"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="12"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <ui:SymbolIcon Foreground="{StaticResource ShellYellowBrush}"
+                                   Symbol="Folder24" />
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="目录" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.ScannedDirectories}" />
+                </StackPanel>
+                <Border Grid.Column="13"
+                        Width="1"
+                        Height="18"
+                        Margin="12,0"
+                        Background="{DynamicResource ControlStrokeColorDefaultBrush}" />
+                <StackPanel Grid.Column="14"
+                            VerticalAlignment="Center"
+                            Orientation="Horizontal">
+                    <ui:SymbolIcon Foreground="{StaticResource ShellWarningBrush}"
+                                   Symbol="Warning24" />
+                    <TextBlock Style="{StaticResource StatusLabelStyle}"
+                               Text="问题" />
+                    <TextBlock Style="{StaticResource StatusValueStyle}"
+                               Text="{Binding Scan.IssueCount}" />
+                </StackPanel>
+            </Grid>
+        </ScrollViewer>
+    </Border>
+</UserControl>

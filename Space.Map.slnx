@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Space.Map.Core/Space.Map.Core.csproj" />
+    <Project Path="src/Space.Map.App/Space.Map.App.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Space.Map.Core.Tests/Space.Map.Core.Tests.csproj" />
+  </Folder>
+</Solution>
