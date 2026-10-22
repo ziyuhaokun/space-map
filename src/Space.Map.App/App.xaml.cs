@@ -1,7 +1,9 @@
-using Space.Map.App.Logging;
 using Space.Map.App.Services;
 using Space.Map.App.ViewModels;
 using Space.Map.Core.Scanning;
+using Space.Map.Infrastructure.Drives;
+using Space.Map.Infrastructure.Logging;
+using Space.Map.Infrastructure.Platform;
 using System.Windows;
 using System.Windows.Threading;
 using Wpf.Ui.Appearance;
@@ -48,11 +50,13 @@ public partial class App : Application
 
     private static MainWindowViewModel CreateMainWindowViewModel()
     {
+        var identityResolver = new WindowsDirectoryIdentityResolver();
         return new MainWindowViewModel(
-            new FileSystemDiskScanner(),
+            new FileSystemDiskScanner(identityResolver),
             new WindowsFolderPicker(),
             new WindowsShellActions(),
-            new WpfUiThemeService());
+            new WpfUiThemeService(),
+            new SystemDriveService());
     }
 
     private void RegisterGlobalExceptionHandlers()

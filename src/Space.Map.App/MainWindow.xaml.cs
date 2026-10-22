@@ -1,5 +1,5 @@
-using Space.Map.App.Logging;
 using Space.Map.App.ViewModels;
+using Space.Map.Infrastructure.Logging;
 using System.Windows.Interop;
 using Wpf.Ui.Appearance;
 using Wpf.Ui.Controls;

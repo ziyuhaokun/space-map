@@ -5,6 +5,13 @@ namespace Space.Map.Core.Scanning;
 
 public sealed class FileSystemDiskScanner : IDiskScanner
 {
+    private readonly IDirectoryIdentityResolver? _identityResolver;
+
+    public FileSystemDiskScanner(IDirectoryIdentityResolver? identityResolver = null)
+    {
+        _identityResolver = identityResolver;
+    }
+
     public Task<ScanResult> ScanAsync(
         ScanOptions options,
         IProgress<ScanProgress>? progress = null,
@@ -18,14 +25,15 @@ public sealed class FileSystemDiskScanner : IDiskScanner
         }
 
         return Task.Run(
-            () => new ScannerRun(options, progress, cancellationToken).Execute(),
+            () => new ScannerRun(options, progress, cancellationToken, _identityResolver).Execute(),
             cancellationToken);
     }
 
     private sealed class ScannerRun(
         ScanOptions options,
         IProgress<ScanProgress>? progress,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        IDirectoryIdentityResolver? identityResolver)
     {
         private const int MaxRetainedIssues = 500;
 
@@ -524,8 +532,13 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 return true;
             }
 
+            if (identityResolver is null)
+            {
+                return true;
+            }
+
             var directory = frame.Directory;
-            if (!WindowsDirectoryIdentity.TryGet(directory.FullName, out var identity, out var errorMessage))
+            if (!identityResolver.TryGet(directory.FullName, out var identity, out var errorMessage))
             {
                 AddIssue(worker, directory.FullName, ScanIssueKind.Io, errorMessage);
                 worker.SkippedCount++;

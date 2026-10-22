@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Space.Map.Infrastructure</RootNamespace>
+    <AssemblyName>Space.Map.Infrastructure</AssemblyName>
+    <Description>Windows OS and infrastructure services for Space.Map</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Space.Map.Core\Space.Map.Core.csproj" />
+  </ItemGroup>
+
+</Project>

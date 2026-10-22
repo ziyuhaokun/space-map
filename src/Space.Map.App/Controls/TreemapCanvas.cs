@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using Space.Map.Core.Formatting;
+using Space.Map.Core.Layout;
 using Space.Map.Core.Scanning;
 
 namespace Space.Map.App.Controls;
@@ -10,6 +11,8 @@ public sealed class TreemapCanvas : FrameworkElement
 {
     private const int MaxTiles = 64;
     private const double LayoutSizeEpsilon = 0.5;
+
+    private static readonly ITreemapLayoutEngine<ScanNode> LayoutEngine = new SquarifiedTreemapLayoutEngine<ScanNode>();
 
     public static readonly DependencyProperty RootProperty = DependencyProperty.Register(
         nameof(Root),
@@ -166,194 +169,26 @@ public sealed class TreemapCanvas : FrameworkElement
             return;
         }
 
-        var children = parent.Children
-            .Where(static node => node.SizeBytes > 0)
-            .OrderByDescending(static node => node.SizeBytes)
-            .Take(MaxTiles)
-            .ToList();
-
-        if (children.Count == 0)
+        var children = parent.Children;
+        if (children.Count == 0 || children.All(static node => node.SizeBytes <= 0))
         {
             AddTile(parent, bounds, paletteOffset: 0);
             return;
         }
 
-        long total = 0;
-        foreach (var node in children)
-        {
-            total += node.SizeBytes;
-        }
+        var layoutBounds = new LayoutBounds(bounds.X, bounds.Y, bounds.Width, bounds.Height);
+        var tiles = LayoutEngine.Layout(children, static node => node.SizeBytes, layoutBounds, MaxTiles);
 
-        if (total <= 0)
+        if (tiles.Count == 0)
         {
             AddTile(parent, bounds, paletteOffset: 0);
             return;
         }
 
-        LayoutSquarified(children, bounds);
-    }
-
-    /// <summary>
-    /// Squarified treemap (Bruls, Huizing, van Wijk): pack rows to improve tile aspect ratios.
-    /// Uses an index cursor — no RemoveAt(0) O(n²) shifts.
-    /// </summary>
-    private void LayoutSquarified(List<ScanNode> items, Rect bounds)
-    {
-        var rect = bounds;
-        var paletteIndex = 0;
-        var start = 0;
-        var count = items.Count;
-
-        while (start < count)
+        foreach (var tile in tiles)
         {
-            if (rect.Width < 1 || rect.Height < 1)
-            {
-                break;
-            }
-
-            long remainingBytes = 0;
-            for (var index = start; index < count; index++)
-            {
-                remainingBytes += items[index].SizeBytes;
-            }
-
-            if (remainingBytes <= 0)
-            {
-                break;
-            }
-
-            var area = rect.Width * rect.Height;
-            var side = Math.Min(rect.Width, rect.Height);
-            var row = new List<ScanNode>();
-            long rowBytes = 0;
-            var cursor = start;
-
-            while (cursor < count)
-            {
-                var next = items[cursor];
-                if (row.Count == 0)
-                {
-                    row.Add(next);
-                    rowBytes = next.SizeBytes;
-                    cursor++;
-                    continue;
-                }
-
-                var worstBefore = WorstAspectRatio(row, rowBytes, side, area, remainingBytes);
-                var worstAfter = WorstAspectRatio(row, rowBytes, next, side, area, remainingBytes);
-                if (worstAfter <= worstBefore)
-                {
-                    row.Add(next);
-                    rowBytes += next.SizeBytes;
-                    cursor++;
-                }
-                else
-                {
-                    break;
-                }
-            }
-
-            rect = LayoutRow(row, rowBytes, remainingBytes, rect, ref paletteIndex);
-            start = cursor;
-        }
-    }
-
-    private Rect LayoutRow(
-        List<ScanNode> row,
-        long rowBytes,
-        long remainingBytes,
-        Rect rect,
-        ref int paletteIndex)
-    {
-        if (rowBytes <= 0 || remainingBytes <= 0 || row.Count == 0)
-        {
-            return rect;
-        }
-
-        var wider = rect.Width >= rect.Height;
-        if (wider)
-        {
-            var stripWidth = rect.Width * (rowBytes / (double)remainingBytes);
-            var y = rect.Y;
-            foreach (var node in row)
-            {
-                var height = rect.Height * (node.SizeBytes / (double)rowBytes);
-                var tileBounds = Deflate(new Rect(rect.X, y, stripWidth, height), 1.2);
-                AddTile(node, tileBounds, paletteIndex++);
-                y += height;
-            }
-
-            return new Rect(rect.X + stripWidth, rect.Y, Math.Max(0, rect.Width - stripWidth), rect.Height);
-        }
-
-        var stripHeight = rect.Height * (rowBytes / (double)remainingBytes);
-        var x = rect.X;
-        foreach (var node in row)
-        {
-            var width = rect.Width * (node.SizeBytes / (double)rowBytes);
-            var tileBounds = Deflate(new Rect(x, rect.Y, width, stripHeight), 1.2);
-            AddTile(node, tileBounds, paletteIndex++);
-            x += width;
-        }
-
-        return new Rect(rect.X, rect.Y + stripHeight, rect.Width, Math.Max(0, rect.Height - stripHeight));
-    }
-
-    /// <summary>
-    /// Worst aspect ratio of rectangles in a candidate row placed along side length <paramref name="side"/>.
-    /// Uses normalized areas so remaining children fill <paramref name="area"/>.
-    /// </summary>
-    private static double WorstAspectRatio(
-        List<ScanNode> row,
-        long rowBytes,
-        double side,
-        double area,
-        long remainingBytes)
-    {
-        if (rowBytes <= 0 || side <= 0 || area <= 0 || remainingBytes <= 0 || row.Count == 0)
-        {
-            return double.MaxValue;
-        }
-
-        var rowArea = area * (rowBytes / (double)remainingBytes);
-        var worst = 1.0;
-
-        foreach (var node in row)
-        {
-            var itemArea = area * (node.SizeBytes / (double)remainingBytes);
-            if (itemArea <= 0)
-            {
-                continue;
-            }
-
-            var ratio = Math.Max(
-                (side * side * itemArea) / (rowArea * rowArea),
-                (rowArea * rowArea) / (side * side * itemArea));
-            if (ratio > worst)
-            {
-                worst = ratio;
-            }
-        }
-
-        return worst;
-    }
-
-    private static double WorstAspectRatio(
-        List<ScanNode> row,
-        long rowBytes,
-        ScanNode next,
-        double side,
-        double area,
-        long remainingBytes)
-    {
-        row.Add(next);
-        try
-        {
-            return WorstAspectRatio(row, rowBytes + next.SizeBytes, side, area, remainingBytes);
-        }
-        finally
-        {
-            row.RemoveAt(row.Count - 1);
+            var r = new Rect(tile.Bounds.X, tile.Bounds.Y, tile.Bounds.Width, tile.Bounds.Height);
+            AddTile(tile.Item, Deflate(r, 1.2), tile.PaletteIndex);
         }
     }
 

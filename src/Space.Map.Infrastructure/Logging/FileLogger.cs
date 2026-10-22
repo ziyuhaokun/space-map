@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text;
 
-namespace Space.Map.App.Logging;
+namespace Space.Map.Infrastructure.Logging;
 
 public sealed class FileLogger : IDisposable
 {

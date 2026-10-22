@@ -1,18 +1,25 @@
 using Microsoft.Win32.SafeHandles;
+using Space.Map.Core.Scanning;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 
-namespace Space.Map.Core.Scanning;
+namespace Space.Map.Infrastructure.Platform;
 
-internal readonly record struct DirectoryIdentity(uint VolumeSerialNumber, ulong FileIndex);
-
-internal static class WindowsDirectoryIdentity
+public sealed class WindowsDirectoryIdentityResolver : IDirectoryIdentityResolver
 {
     private const uint FileFlagBackupSemantics = 0x02000000;
 
-    public static bool TryGet(
+    public bool TryGet(
+        string path,
+        out DirectoryIdentity identity,
+        out string errorMessage)
+    {
+        return TryGetInternal(path, out identity, out errorMessage);
+    }
+
+    internal static bool TryGetInternal(
         string path,
         out DirectoryIdentity identity,
         out string errorMessage)

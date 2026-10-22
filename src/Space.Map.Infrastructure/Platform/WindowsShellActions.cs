@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Windows;
+using Space.Map.Core.Abstractions;
 
-namespace Space.Map.App.Services;
+namespace Space.Map.Infrastructure.Platform;
 
 public sealed class WindowsShellActions : IShellActions
 {

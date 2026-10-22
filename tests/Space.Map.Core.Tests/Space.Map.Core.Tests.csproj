@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <RootNamespace>Space.Map.Core.Tests</RootNamespace>
@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Space.Map.Core\Space.Map.Core.csproj" />
+    <ProjectReference Include="..\..\src\Space.Map.Infrastructure\Space.Map.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

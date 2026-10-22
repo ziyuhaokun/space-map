@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Space.Map.App.Logging;
+using Space.Map.Core.Abstractions;
+using Space.Map.Infrastructure.Logging;
 using System.Collections.ObjectModel;
-using System.IO;
 
 namespace Space.Map.App.ViewModels;
 
@@ -12,15 +12,18 @@ namespace Space.Map.App.ViewModels;
 public partial class DriveHomeViewModel : ObservableObject
 {
     private readonly ScanSessionViewModel _scan;
+    private readonly IDriveService _driveService;
     private readonly Action _showDriveHome;
     private readonly Func<bool> _isHostDisposed;
 
     public DriveHomeViewModel(
         ScanSessionViewModel scan,
+        IDriveService driveService,
         Action showDriveHome,
         Func<bool> isHostDisposed)
     {
         _scan = scan;
+        _driveService = driveService;
         _showDriveHome = showDriveHome;
         _isHostDisposed = isHostDisposed;
         _scan.PropertyChanged += OnScanPropertyChanged;
@@ -65,9 +68,10 @@ public partial class DriveHomeViewModel : ObservableObject
 
         try
         {
-            foreach (var drive in DriveInfo.GetDrives())
+            var volumes = _driveService.GetDrives();
+            foreach (var volume in volumes)
             {
-                Drives.Add(DriveEntry.FromDriveInfo(drive));
+                Drives.Add(DriveEntry.FromVolume(volume));
             }
 
             if (Drives.Count == 0)

@@ -1,8 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Space.Map.App.Logging;
 using Space.Map.App.Services;
+using Space.Map.Core.Abstractions;
 using Space.Map.Core.Scanning;
+using Space.Map.Infrastructure.Logging;
 
 namespace Space.Map.App.ViewModels;
 
@@ -18,28 +19,25 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         IDiskScanner scanner,
         IFolderPicker folderPicker,
         IShellActions shellActions,
-        IThemeService themeService)
+        IThemeService themeService,
+        IDriveService driveService)
     {
         _themeService = themeService;
 
-        // Wire status through a local so Navigation can be built before Scan is assigned
-        // without capturing an uninitialized property.
-        ScanSessionViewModel? scanSession = null;
-        Navigation = new WorkspaceNavigationViewModel(
-            shellActions,
-            status => scanSession!.SetStatus(status));
+        Navigation = new WorkspaceNavigationViewModel(shellActions);
 
-        scanSession = new ScanSessionViewModel(
+        Scan = new ScanSessionViewModel(
             scanner,
             folderPicker,
+            driveService,
             Navigation,
             hideDriveHome: () => IsDriveHomeVisible = false,
             showDriveHome: () => IsDriveHomeVisible = true,
             isHostDisposed: () => _isDisposed);
-        Scan = scanSession;
 
         DriveHome = new DriveHomeViewModel(
             Scan,
+            driveService,
             showDriveHome: () => IsDriveHomeVisible = true,
             isHostDisposed: () => _isDisposed);
 

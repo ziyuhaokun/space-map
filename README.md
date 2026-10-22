@@ -49,21 +49,30 @@
 
 ## Architecture / 项目架构
 
-Space.Map follows the **Deep Module** design:
+Space.Map follows the **Deep Module** design with clean separation of concerns:
 
 ```
 space.map/
 ├── .github/                      # CI/CD workflows and issue templates
 ├── src/
-│   ├── Space.Map.Core/           # Standalone scanning engine & data models (Zero WPF dependency)
-│   │   ├── Scanning/             # Iterative DFS, fan-out scanner, directory identity
+│   ├── Space.Map.Core/           # Standalone domain engine (Zero WPF / Zero OS-PInvoke dependency)
+│   │   ├── Scanning/             # Iterative DFS, fan-out engine, directory identity abstractions
+│   │   ├── Layout/               # Squarified Treemap geometry layout engine
+│   │   ├── Navigation/           # Hierarchical drill-down navigation state machine
+│   │   ├── Abstractions/         # Deep interface contracts (IDriveService, IShellActions, IFolderPicker)
 │   │   └── Formatting/           # ByteSizeFormatter
-│   └── Space.Map.App/            # Fluent WPF desktop application
+│   │
+│   ├── Space.Map.Infrastructure/ # Windows OS platform & infrastructure adapters
+│   │   ├── Platform/             # Win32 file identity handles, shell actions, folder dialogs
+│   │   ├── Drives/               # Physical hardware drive enumeration & volume telemetry
+│   │   └── Logging/              # Rolling file logging services
+│   │
+│   └── Space.Map.App/            # Modern Fluent WPF desktop application (Feature-based structure)
+│       ├── Features/             # High locality: DriveHome, Workspace, Shell
 │       ├── Controls/             # Custom DrawingContext canvases (TreemapCanvas, PieChartCanvas)
-│       ├── Resources/            # i18n string dictionaries (en-US, zh-CN)
-│       ├── Services/             # Shell, folder picker, theme, localization services
-│       ├── ViewModels/           # MVVM view models (CommunityToolkit.Mvvm)
-│       └── Views/                # UserControls
+│       ├── Resources/            # i18n localization dictionaries (en-US, zh-CN)
+│       └── Services/             # App theme & localization services
+│
 ├── tests/
 │   └── Space.Map.Core.Tests/     # xUnit & FluentAssertions test suite
 ├── Directory.Build.props         # Global MSBuild properties

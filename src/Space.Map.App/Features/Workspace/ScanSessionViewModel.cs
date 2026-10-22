@@ -1,9 +1,10 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Space.Map.App.Logging;
 using Space.Map.App.Services;
+using Space.Map.Core.Abstractions;
 using Space.Map.Core.Formatting;
 using Space.Map.Core.Scanning;
+using Space.Map.Infrastructure.Logging;
 using System.Collections.ObjectModel;
 using System.IO;
 
@@ -16,6 +17,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
 {
     private readonly IDiskScanner _scanner;
     private readonly IFolderPicker _folderPicker;
+    private readonly IDriveService _driveService;
     private readonly WorkspaceNavigationViewModel _navigation;
     private readonly Action _hideDriveHome;
     private readonly Action _showDriveHome;
@@ -27,6 +29,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     public ScanSessionViewModel(
         IDiskScanner scanner,
         IFolderPicker folderPicker,
+        IDriveService driveService,
         WorkspaceNavigationViewModel navigation,
         Action hideDriveHome,
         Action showDriveHome,
@@ -34,18 +37,24 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     {
         _scanner = scanner;
         _folderPicker = folderPicker;
+        _driveService = driveService;
         _navigation = navigation;
         _hideDriveHome = hideDriveHome;
         _showDriveHome = showDriveHome;
         _isHostDisposed = isHostDisposed;
+        SystemDriveLabel = _driveService.ResolveSystemDriveRoot();
         StatusText = "选择磁盘开始扫描，或通过工具栏选择目录";
+
+        WeakReferenceMessenger.Default.Register<ScanSessionViewModel, Space.Map.App.Messages.StatusChangedMessage>(
+            this,
+            (recipient, message) => recipient.SetStatus(message.Status));
     }
 
     public ObservableCollection<ScanNodeSummary> LargeFiles { get; } = [];
 
     public ObservableCollection<ScanIssueSummary> Issues { get; } = [];
 
-    public string SystemDriveLabel { get; } = ResolveSystemDriveRoot();
+    public string SystemDriveLabel { get; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(StartScanCommand))]
@@ -411,39 +420,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
             ScanResultStatus.Failed => "失败",
             _ => status.ToString()
         };
-    }
-
-    private static string ResolveSystemDriveRoot()
-    {
-        try
-        {
-            var systemRoot = Path.GetPathRoot(Environment.SystemDirectory);
-            if (!string.IsNullOrWhiteSpace(systemRoot) && Directory.Exists(systemRoot))
-            {
-                return systemRoot;
-            }
-        }
-        catch
-        {
-            // Fall through to first ready fixed drive.
-        }
-
-        try
-        {
-            foreach (var drive in DriveInfo.GetDrives())
-            {
-                if (drive.IsReady && drive.DriveType == DriveType.Fixed)
-                {
-                    return drive.RootDirectory.FullName;
-                }
-            }
-        }
-        catch
-        {
-            // Fall through to user profile.
-        }
-
-        return Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
     }
 
     public void Dispose()

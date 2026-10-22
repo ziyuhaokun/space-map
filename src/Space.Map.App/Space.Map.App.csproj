@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Space.Map.Core\Space.Map.Core.csproj" />
+    <ProjectReference Include="..\Space.Map.Infrastructure\Space.Map.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>

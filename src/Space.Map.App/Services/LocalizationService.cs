@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Windows;
-using Space.Map.App.Logging;
+using Space.Map.Infrastructure.Logging;
 
 namespace Space.Map.App.Services;
 

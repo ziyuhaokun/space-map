@@ -1,6 +1,7 @@
 using Microsoft.Win32;
+using Space.Map.Core.Abstractions;
 
-namespace Space.Map.App.Services;
+namespace Space.Map.Infrastructure.Platform;
 
 public sealed class WindowsFolderPicker : IFolderPicker
 {

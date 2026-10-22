@@ -1,4 +1,4 @@
-namespace Space.Map.App.Logging;
+namespace Space.Map.Infrastructure.Logging;
 
 public enum LogLevel
 {

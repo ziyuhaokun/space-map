@@ -1,4 +1,4 @@
-namespace Space.Map.App.Services;
+namespace Space.Map.Core.Abstractions;
 
 public interface IShellActions
 {
