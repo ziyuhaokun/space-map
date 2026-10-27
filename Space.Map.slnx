@@ -6,5 +6,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Space.Map.Core.Tests/Space.Map.Core.Tests.csproj" />
+    <Project Path="tests/Space.Map.App.Tests/Space.Map.App.Tests.csproj" />
   </Folder>
 </Solution>

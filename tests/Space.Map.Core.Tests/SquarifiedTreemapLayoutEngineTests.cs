@@ -6,7 +6,7 @@ namespace Space.Map.Core.Tests;
 
 public class SquarifiedTreemapLayoutEngineTests
 {
-    private record TestItem(string Name, long Size);
+    private sealed record TestItem(string Name, long Size);
 
     [Fact]
     public void Layout_WithMultipleItems_FillsBoundsWithoutNegativeDimensions()

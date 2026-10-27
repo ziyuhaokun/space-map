@@ -11,6 +11,12 @@ namespace Space.Map.Core.Tests;
 /// default but the other scanner tests never touch: they all pin MaxParallelism = 1,
 /// so every worker-owned state was only ever written from one thread.
 /// </summary>
+/// <remarks>
+/// Windows-only: the denied directories are built with NTFS ACLs. The test project
+/// targets plain net10.0 now that Infrastructure no longer needs WPF, so the
+/// platform support has to be declared here.
+/// </remarks>
+[System.Runtime.Versioning.SupportedOSPlatform("windows")]
 public class FileSystemDiskScannerConcurrencyTests : IDisposable
 {
     private const int SubtreeCount = 8;
@@ -29,6 +35,8 @@ public class FileSystemDiskScannerConcurrencyTests : IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+
         // Release the deny ACEs first; the directory tree cannot be removed while
         // enumeration is denied on any descendant.
         foreach (var path in _lockedDirectories)

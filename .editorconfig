@@ -1,49 +1,33 @@
-# EditorConfig is awesome: https://EditorConfig.org
-
-# Top-most EditorConfig file
 root = true
 
-# All files
 [*]
+charset = utf-8
+end_of_line = crlf
+insert_final_newline = true
+trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
-end_of_line = crlf
-charset = utf-8
-trim_trailing_whitespace = true
-insert_final_newline = true
 
-# XML and project files
-[*.{csproj,props,targets,xml,xaml,xsd}]
+[*.{csproj,props,targets,xml,xaml}]
 indent_size = 2
 
-# JSON and YAML files
-[*.{json,yml,yaml}]
-indent_size = 2
-
-# Markdown files
 [*.md]
 trim_trailing_whitespace = false
 
-# C# files
 [*.cs]
-# New line preferences
-csharp_new_line_before_open_brace = all
-csharp_new_line_before_else = true
-csharp_new_line_before_catch = true
-csharp_new_line_before_finally = true
-csharp_new_line_before_members_in_object_initializers = true
-csharp_new_line_before_members_in_anonymous_types = true
+# --- Analyzer rules that are wrong for this codebase ---------------------------
 
-# Indentation preferences
-csharp_indent_case_contents = true
-csharp_indent_switch_labels = true
-csharp_indent_labels = one_less_than_current
+# Numbers and dates must follow the UI language, not the invariant culture: that is
+# exactly what LocalizationService.ApplyCulture sets up, and a language switch is
+# supposed to change grouping separators. Forcing InvariantCulture would undo it.
+dotnet_diagnostic.CA1305.severity = none
 
-# Style preferences
-csharp_style_var_for_built_in_types = false : suggestion
-csharp_style_var_when_type_is_apparent = true : suggestion
-csharp_style_var_elsewhere = true : suggestion
-dotnet_style_qualification_for_field = false : suggestion
-dotnet_style_qualification_for_property = false : suggestion
-dotnet_style_qualification_for_method = false : suggestion
-dotnet_style_qualification_for_event = false : suggestion
+# The view models depend on the interfaces on purpose. Tightening a property to the
+# concrete LocalizationService would work against injecting a test double.
+dotnet_diagnostic.CA1859.severity = none
+
+# Test methods are named Method_Scenario_Expectation by convention; the underscores
+# are the point, they make the failure list readable.
+[tests/**/*.cs]
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA2007.severity = none

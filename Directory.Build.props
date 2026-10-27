@@ -5,6 +5,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
+    <!--
+      Turn on the analyzer set that ships with the SDK. Without it "0 warnings" only
+      means the rules were off, not that the code is clean.
+    -->
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
     <!-- Project Metadata -->
     <Authors>ziyuhaokun</Authors>
     <Company>Space.Map</Company>
