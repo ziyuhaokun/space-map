@@ -37,7 +37,7 @@
                         <TextBlock FontSize="24"
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
-                                   Text="{Binding Navigation.SelectedNode.Name, TargetNullValue={DynamicResource Detail_NoSelection}}" />
+                                   Text="{Binding Navigation.SelectedNodeName}" />
                         <Border Margin="12,4,0,0"
                                 Padding="8,3"
                                 VerticalAlignment="Top"

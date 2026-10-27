@@ -66,10 +66,19 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
     public bool HasScanResult => _session.RootNode is not null;
 
+    /// <summary>
+    /// Name of the selected node, or the localized placeholder when nothing is
+    /// selected. A binding cannot carry a DynamicResource into TargetNullValue, so
+    /// the fallback text is resolved here and refreshed on a language switch.
+    /// </summary>
+    public string SelectedNodeName => SelectedNode?.Name
+        ?? LocalizationService.Instance.GetString("Detail_NoSelection");
+
     partial void OnSelectedNodeChanged(ScanNodeSummary? value)
     {
         OpenInExplorerCommand.NotifyCanExecuteChanged();
         CopyPathCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(SelectedNodeName));
 
         if (value is not null && !ReferenceEquals(SelectedTreemapNode, value.Node))
         {
@@ -208,23 +217,25 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     public void RefreshLocalization()
     {
         var currentNode = _session.CurrentNode;
-        if (currentNode is null)
+        if (currentNode is not null)
         {
-            return;
-        }
+            var previousSelection = SelectedNode?.Node;
+            RebuildProjections();
 
-        var previousSelection = SelectedNode?.Node;
-        RebuildProjections();
-
-        if (previousSelection is not null)
-        {
-            var restored = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, previousSelection));
-            if (restored is not null)
+            if (previousSelection is not null)
             {
-                SelectedNode = restored;
-                SelectedTreemapNode = restored.Node;
+                var restored = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, previousSelection));
+                if (restored is not null)
+                {
+                    SelectedNode = restored;
+                    SelectedTreemapNode = restored.Node;
+                }
             }
         }
+
+        // The placeholder is only rendered while nothing is selected, in which
+        // case the rebuild above bails out early.
+        OnPropertyChanged(nameof(SelectedNodeName));
     }
 
     private void RebuildProjections()
