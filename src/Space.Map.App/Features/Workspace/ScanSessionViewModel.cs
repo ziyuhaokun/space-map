@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Space.Map.App.Services;
 using Space.Map.Core.Abstractions;
 using Space.Map.Core.Formatting;
