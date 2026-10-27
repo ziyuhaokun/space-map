@@ -24,11 +24,18 @@ public partial class App : Application
 
         try
         {
-            ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
+            var themeService = new WpfUiThemeService();
+
+            // A saved choice wins; otherwise keep following the system theme.
+            if (!themeService.ApplySavedTheme())
+            {
+                ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
+            }
+
             base.OnStartup(e);
 
             ShutdownMode = ShutdownMode.OnMainWindowClose;
-            MainWindow = new MainWindow(CreateMainWindowViewModel());
+            MainWindow = new MainWindow(CreateMainWindowViewModel(themeService));
             MainWindow.Show();
 
             AppLog.Information("Main window shown.");
@@ -48,14 +55,14 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    private static MainWindowViewModel CreateMainWindowViewModel()
+    private static MainWindowViewModel CreateMainWindowViewModel(IThemeService themeService)
     {
         var identityResolver = new WindowsDirectoryIdentityResolver();
         return new MainWindowViewModel(
             new FileSystemDiskScanner(identityResolver),
             new WindowsFolderPicker(),
             new WindowsShellActions(),
-            new WpfUiThemeService(),
+            themeService,
             new SystemDriveService());
     }
 

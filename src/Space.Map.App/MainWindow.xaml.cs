@@ -26,8 +26,20 @@ public partial class MainWindow : FluentWindow
     private void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
     {
         AppLog.Information("Main window loaded.");
-        ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
-        SystemThemeWatcher.Watch(this, WindowBackdropType.Mica, updateAccents: true);
+
+        // Only follow the system theme when the user never picked one. Watching
+        // unconditionally would re-apply the OS theme and silently discard the
+        // saved choice on every launch.
+        if (_viewModel.HasSavedThemePreference)
+        {
+            AppLog.Debug("Saved theme preference present; not following the system theme.");
+        }
+        else
+        {
+            ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
+            SystemThemeWatcher.Watch(this, WindowBackdropType.Mica, updateAccents: true);
+        }
+
         _viewModel.UpdateThemeToggleState();
     }
 

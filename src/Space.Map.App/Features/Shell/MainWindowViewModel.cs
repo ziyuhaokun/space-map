@@ -101,6 +101,12 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
     public bool IsWorkspaceContentVisible => !IsDriveHomeVisible;
 
+    /// <summary>
+    /// The window uses this to decide whether the system theme watcher may take
+    /// over; a saved choice must win over the OS setting.
+    /// </summary>
+    public bool HasSavedThemePreference => _themeService.HasSavedPreference;
+
     public bool IsTreemapView => ActiveView == WorkspaceViewMode.Treemap;
 
     public bool IsListView => ActiveView == WorkspaceViewMode.List;
