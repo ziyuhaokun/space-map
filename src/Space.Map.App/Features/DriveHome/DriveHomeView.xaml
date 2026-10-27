@@ -90,7 +90,7 @@
                                                    Text="{DynamicResource DriveHome_Used}" />
                                         <TextBlock FontSize="13"
                                                    FontWeight="SemiBold"
-                                                   Foreground="#FF66A6FF"
+                                                   Foreground="{StaticResource ShellAccentBrush}"
                                                    Text="{Binding UsedSizeText}" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1">

@@ -100,7 +100,7 @@
                 <StackPanel Grid.Column="6"
                             VerticalAlignment="Center"
                             Orientation="Horizontal">
-                    <ui:SymbolIcon Foreground="#FF66A6FF"
+                    <ui:SymbolIcon Foreground="{StaticResource ShellAccentBrush}"
                                    Symbol="DataPie24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
                                Text="{DynamicResource Status_TotalSize}" />

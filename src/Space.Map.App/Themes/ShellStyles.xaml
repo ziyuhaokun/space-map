@@ -3,6 +3,19 @@
                     xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml">
 
         <SolidColorBrush x:Key="ShellPrimaryBrush" Color="#FF2F7DFF" />
+
+        <!--
+          Accent used for emphasised figures and icon glyphs (metric values, the
+          active view-mode icon, the caret in the detail panel). It is lighter than
+          ShellPrimaryBrush so it stays legible on the dark card fill.
+          Previously this exact value was pasted into a dozen files, alongside a
+          second near-identical #FF64A4FF, so the UI carried three shades of
+          "brand blue" at once.
+        -->
+        <SolidColorBrush x:Key="ShellAccentBrush" Color="#FF66A6FF" />
+
+        <!-- Tinted fill behind the "current selection" chip in the detail panel. -->
+        <SolidColorBrush x:Key="ShellAccentChipBrush" Color="#203A84D8" />
         <SolidColorBrush x:Key="ShellPrimaryHoverBrush" Color="#FF3A86FF" />
         <SolidColorBrush x:Key="ShellGreenBrush" Color="#FF39D98A" />
         <SolidColorBrush x:Key="ShellPurpleBrush" Color="#FFB77CFF" />

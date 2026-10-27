@@ -70,7 +70,7 @@
                                 <DataTrigger Binding="{Binding IsTreemapView}"
                                              Value="True">
                                     <Setter Property="Foreground"
-                                            Value="#FF64A4FF" />
+                                            Value="{StaticResource ShellAccentBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -89,7 +89,7 @@
                                 <DataTrigger Binding="{Binding IsListView}"
                                              Value="True">
                                     <Setter Property="Foreground"
-                                            Value="#FF64A4FF" />
+                                            Value="{StaticResource ShellAccentBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -108,7 +108,7 @@
                                 <DataTrigger Binding="{Binding IsStatisticsView}"
                                              Value="True">
                                     <Setter Property="Foreground"
-                                            Value="#FF64A4FF" />
+                                            Value="{StaticResource ShellAccentBrush}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>

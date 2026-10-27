@@ -19,7 +19,7 @@
                 <StackPanel>
                     <TextBlock Style="{StaticResource CompactStatLabelStyle}"
                                Text="{DynamicResource Stats_TotalSize}" />
-                    <TextBlock Foreground="#FF66A6FF"
+                    <TextBlock Foreground="{StaticResource ShellAccentBrush}"
                                Style="{StaticResource CompactStatValueStyle}"
                                Text="{Binding Scan.TotalSize}" />
                 </StackPanel>
@@ -143,7 +143,7 @@
                                                HorizontalAlignment="Right"
                                                VerticalAlignment="Center"
                                                FontWeight="SemiBold"
-                                               Foreground="#FF66A6FF"
+                                               Foreground="{StaticResource ShellAccentBrush}"
                                                Text="{Binding PercentOfRoot}" />
                                 </Grid>
                             </DataTemplate>

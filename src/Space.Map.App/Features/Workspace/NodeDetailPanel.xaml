@@ -27,7 +27,7 @@
                     <ui:SymbolIcon HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    FontSize="54"
-                                   Foreground="#FF6E90FF"
+                                   Foreground="{StaticResource ShellAccentBrush}"
                                    Symbol="{Binding Navigation.DetailIconSymbol}" />
                 </Border>
 
@@ -42,11 +42,11 @@
                         <Border Margin="12,4,0,0"
                                 Padding="8,3"
                                 VerticalAlignment="Top"
-                                Background="#203A84D8"
+                                Background="{StaticResource ShellAccentChipBrush}"
                                 CornerRadius="4"
                                 Visibility="{Binding Navigation.HasDetailSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock FontSize="12"
-                                       Foreground="#FF66A6FF"
+                                       Foreground="{StaticResource ShellAccentBrush}"
                                        Text="{DynamicResource Detail_CurrentSelected}" />
                         </Border>
                     </StackPanel>
@@ -85,13 +85,13 @@
                         Style="{StaticResource MetricCardStyle}">
                     <StackPanel>
                         <StackPanel Orientation="Horizontal">
-                            <ui:SymbolIcon Foreground="#FF66A6FF"
+                            <ui:SymbolIcon Foreground="{StaticResource ShellAccentBrush}"
                                            Symbol="DataPie24" />
                             <TextBlock Margin="8,0,0,0"
                                        Style="{StaticResource MetricLabelStyle}"
                                        Text="{DynamicResource Detail_DirectSize}" />
                         </StackPanel>
-                        <TextBlock Foreground="#FF66A6FF"
+                        <TextBlock Foreground="{StaticResource ShellAccentBrush}"
                                    Style="{StaticResource MetricValueStyle}"
                                    Text="{Binding Navigation.DetailNode.Size}" />
                     </StackPanel>
