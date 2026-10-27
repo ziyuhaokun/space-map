@@ -17,10 +17,23 @@
                                CommandParameter="{Binding Index}"
                                Content="{Binding Name}"
                                Style="{StaticResource BreadcrumbButtonStyle}" />
+                    <!-- Separator belongs between crumbs, not after the last one. -->
                     <TextBlock Margin="4,0,0,0"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Text="›" />
+                               Text="›">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLast}"
+                                                 Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </StackPanel>
             </DataTemplate>
         </ItemsControl.ItemTemplate>

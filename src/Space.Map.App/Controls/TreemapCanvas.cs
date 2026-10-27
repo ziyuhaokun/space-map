@@ -43,6 +43,7 @@ public sealed class TreemapCanvas : FrameworkElement
     private static readonly Brush LabelBrush = Brushes.White;
 
     private readonly List<TreemapTile> _tiles = [];
+    private string? _lastToolTip;
     private ScanNode? _layoutRoot;
     private Size _layoutSize;
     private bool _layoutIsEmptyState;
@@ -58,6 +59,9 @@ public sealed class TreemapCanvas : FrameworkElement
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // Loaded can fire again after a reparent; -= first so the handler is not
+        // subscribed twice (which would repaint twice per language switch).
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
         LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
         InvalidateVisual();
     }
@@ -117,9 +121,18 @@ public sealed class TreemapCanvas : FrameworkElement
     {
         base.OnMouseMove(e);
         var tile = HitTestTile(e.GetPosition(this));
-        ToolTip = tile is null
+
+        // MouseMove fires continuously; only touch ToolTip when the text actually
+        // changes, otherwise every move rebuilds the tooltip object and its visual.
+        var toolTip = tile is null
             ? null
             : $"{GetDisplayName(tile.Node)}\n{ByteSizeFormatter.Format(tile.Node.SizeBytes)}\n{tile.Node.FullPath}";
+
+        if (!string.Equals(toolTip, _lastToolTip, StringComparison.Ordinal))
+        {
+            _lastToolTip = toolTip;
+            ToolTip = toolTip;
+        }
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)

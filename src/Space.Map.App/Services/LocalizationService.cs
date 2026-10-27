@@ -15,7 +15,13 @@ public sealed class LocalizationService : ILocalizationService
         "Space.Map",
         "language.txt");
 
-    public static LocalizationService Instance { get; set; } = new();
+    /// <summary>
+    /// Process-wide instance. Read-only on purpose: it used to have a public setter,
+    /// so any caller could swap the localization out from under every view model
+    /// mid-flight. Views that can take a constructor parameter should do so; this
+    /// exists for the markup and control layer, which cannot.
+    /// </summary>
+    public static LocalizationService Instance { get; } = new();
 
     private ResourceDictionary? _currentDictionary;
     private string _currentLanguage = EnglishCode;

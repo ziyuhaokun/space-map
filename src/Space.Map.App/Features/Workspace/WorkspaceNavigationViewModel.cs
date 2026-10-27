@@ -20,16 +20,27 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     private const int ChartTopItemCount = 10;
 
     private readonly IShellActions _shellActions;
+    private readonly IClipboardService _clipboard;
+    private readonly ILocalizationService _localization;
     private readonly ITreeNavigationSession _session;
 
-    public WorkspaceNavigationViewModel(IShellActions shellActions)
-        : this(shellActions, new TreeNavigationSession())
+    public WorkspaceNavigationViewModel(
+        IShellActions shellActions,
+        IClipboardService clipboard,
+        ILocalizationService localization)
+        : this(shellActions, clipboard, localization, new TreeNavigationSession())
     {
     }
 
-    public WorkspaceNavigationViewModel(IShellActions shellActions, ITreeNavigationSession session)
+    public WorkspaceNavigationViewModel(
+        IShellActions shellActions,
+        IClipboardService clipboard,
+        ILocalizationService localization,
+        ITreeNavigationSession session)
     {
         _shellActions = shellActions;
+        _clipboard = clipboard;
+        _localization = localization;
         _session = session;
         _session.Navigated += OnSessionNavigated;
     }
@@ -80,20 +91,33 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     /// </summary>
     public ScanNodeSummary? DetailNode => SelectedLargeFile ?? SelectedNode;
 
+    public bool HasDetailSelection => DetailNode is not null;
+
+    /// <summary>
+    /// Symbol shown in the detail panel's icon tile; it should describe what is
+    /// actually selected rather than always showing a folder.
+    /// </summary>
+    public string DetailIconSymbol => DetailNode?.Node.NodeType switch
+    {
+        ScanNodeType.Drive => "HardDrive24",
+        ScanNodeType.File => "Document24",
+        ScanNodeType.VirtualGroup => "FolderList24",
+        _ => "Folder24"
+    };
+
     /// <summary>
     /// Name of the detail node, or the localized placeholder when nothing is
     /// selected. A binding cannot carry a DynamicResource into TargetNullValue, so
     /// the fallback text is resolved here and refreshed on a language switch.
     /// </summary>
     public string SelectedNodeName => DetailNode?.Name
-        ?? LocalizationService.Instance.GetString("Detail_NoSelection");
+        ?? _localization.GetString("Detail_NoSelection");
 
     partial void OnSelectedNodeChanged(ScanNodeSummary? value)
     {
         OpenInExplorerCommand.NotifyCanExecuteChanged();
         CopyPathCommand.NotifyCanExecuteChanged();
-        OnPropertyChanged(nameof(SelectedNodeName));
-        OnPropertyChanged(nameof(DetailNode));
+        NotifyDetailChanged();
 
         // Picking a level node supersedes a top-files row, so the panel cannot keep
         // showing a file that is no longer what the user just clicked.
@@ -113,8 +137,16 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     {
         OpenInExplorerCommand.NotifyCanExecuteChanged();
         CopyPathCommand.NotifyCanExecuteChanged();
+        NotifyDetailChanged();
+    }
+
+    /// <summary>Everything derived from <see cref="DetailNode"/>.</summary>
+    private void NotifyDetailChanged()
+    {
         OnPropertyChanged(nameof(DetailNode));
         OnPropertyChanged(nameof(SelectedNodeName));
+        OnPropertyChanged(nameof(HasDetailSelection));
+        OnPropertyChanged(nameof(DetailIconSymbol));
     }
 
     partial void OnSelectedTreemapNodeChanged(ScanNode? value)
@@ -188,11 +220,11 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
         if (_shellActions.TryOpenInExplorer(path))
         {
-            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_OpenedInExplorer")));
+            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(_localization.GetString("Action_OpenedInExplorer")));
             return;
         }
 
-        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_OpenFailed")));
+        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(_localization.GetString("Action_OpenFailed")));
         AppLog.Warning($"Open in explorer failed: {path}");
     }
 
@@ -205,13 +237,13 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
             return;
         }
 
-        if (_shellActions.TryCopyPath(path))
+        if (_clipboard.TryCopyText(path))
         {
-            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_PathCopied")));
+            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(_localization.GetString("Action_PathCopied")));
             return;
         }
 
-        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_CopyFailed")));
+        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(_localization.GetString("Action_CopyFailed")));
         AppLog.Warning($"Copy path failed: {path}");
     }
 
@@ -225,8 +257,8 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
     public void Reset()
     {
-        LevelItems.Clear();
-        ChartTopItems.Clear();
+        LevelItems.DetachAndClear();
+        ChartTopItems.DetachAndClear();
         Breadcrumbs.Clear();
         SelectedNode = null;
         SelectedLargeFile = null;
@@ -252,37 +284,17 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Rebuilds the projections after a language switch: node type labels and the
-    /// virtual-group name are captured when a summary is constructed.
+    /// Re-renders the text this view model owns after a language switch. The row
+    /// objects refresh themselves (they hold resource keys, not baked strings), so
+    /// only the placeholder needs pushing -- and rebuilding the collections just to
+    /// change wording would drop the user's selection.
     /// </summary>
-    public void RefreshLocalization()
-    {
-        var currentNode = _session.CurrentNode;
-        if (currentNode is not null)
-        {
-            var previousSelection = SelectedNode?.Node;
-            RebuildProjections();
-
-            if (previousSelection is not null)
-            {
-                var restored = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, previousSelection));
-                if (restored is not null)
-                {
-                    SelectedNode = restored;
-                    SelectedTreemapNode = restored.Node;
-                }
-            }
-        }
-
-        // The placeholder is only rendered while nothing is selected, in which
-        // case the rebuild above bails out early.
-        OnPropertyChanged(nameof(SelectedNodeName));
-    }
+    public void RefreshLocalization() => NotifyDetailChanged();
 
     private void RebuildProjections()
     {
-        LevelItems.Clear();
-        ChartTopItems.Clear();
+        LevelItems.DetachAndClear();
+        ChartTopItems.DetachAndClear();
         Breadcrumbs.Clear();
 
         var current = _session.CurrentNode;
@@ -303,7 +315,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
         for (var index = 0; index < rankedItems.Count; index++)
         {
-            var summary = new ScanNodeSummary(rankedItems[index], parentSize, index);
+            var summary = new ScanNodeSummary(rankedItems[index], parentSize, _localization, index);
             LevelItems.Add(summary);
             if (index < ChartTopItemCount)
             {
@@ -315,7 +327,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
         for (var i = 0; i < rawBreadcrumbs.Count; i++)
         {
             var item = rawBreadcrumbs[i];
-            Breadcrumbs.Add(new BreadcrumbItem(item.Name, i));
+            Breadcrumbs.Add(new BreadcrumbItem(item.Name, i, isLast: i == rawBreadcrumbs.Count - 1));
         }
 
         SelectedNode = LevelItems.FirstOrDefault();

@@ -1,50 +1,82 @@
+using System.ComponentModel;
 using Space.Map.App.Services;
 using Space.Map.Core.Formatting;
 using Space.Map.Core.Scanning;
 
 namespace Space.Map.App.ViewModels;
 
-public sealed class ScanNodeSummary(ScanNode node, long rootSizeBytes, int colorIndex = 0)
+/// <summary>
+/// Row shown for one scanned node. The two localized members (<see cref="Name"/> for
+/// a virtual group, <see cref="Type"/>) are re-rendered when the language changes
+/// rather than baked in at construction, so a language switch does not have to
+/// rebuild every collection and restore the selection afterwards.
+/// </summary>
+public sealed class ScanNodeSummary : INotifyPropertyChanged
 {
-    public ScanNode Node { get; } = node;
+    private readonly long _rootSizeBytes;
+    private readonly ILocalizationService _localizationService;
+    private readonly LocalizationSubscription _localization;
 
-    public int ColorIndex { get; } = colorIndex;
+    public ScanNodeSummary(ScanNode node, long rootSizeBytes, int colorIndex = 0)
+        : this(node, rootSizeBytes, LocalizationService.Instance, colorIndex)
+    {
+    }
 
-    public int Rank { get; } = colorIndex + 1;
+    public ScanNodeSummary(
+        ScanNode node,
+        long rootSizeBytes,
+        ILocalizationService localization,
+        int colorIndex = 0)
+    {
+        Node = node;
+        _rootSizeBytes = rootSizeBytes;
+        _localizationService = localization;
+        ColorIndex = colorIndex;
+        Rank = colorIndex + 1;
+        _localization = new LocalizationSubscription(localization, OnLanguageChanged);
+        _localization.Attach();
+    }
 
-    public string Name { get; } = ResolveName(node);
+    public event PropertyChangedEventHandler? PropertyChanged;
 
-    public string FullPath { get; } = node.FullPath;
+    public ScanNode Node { get; }
 
-    public string Type { get; } = LocalizationService.Instance.GetString($"NodeType_{node.NodeType}");
+    public int ColorIndex { get; }
 
-    public long SizeBytes { get; } = node.SizeBytes;
+    public int Rank { get; }
 
-    public string Size { get; } = ByteSizeFormatter.Format(node.SizeBytes);
+    public string Name => Node.NodeType == ScanNodeType.VirtualGroup
+        // Virtual groups carry a language-neutral "#others" placeholder from the
+        // scanner; render the localized aggregate label instead.
+        ? _localizationService.Format("NodeType_OtherFormat", Node.AggregatedItemCount)
+        : Node.Name;
 
-    public string PercentOfRoot { get; } = rootSizeBytes > 0
-        ? $"{node.SizeBytes * 100d / rootSizeBytes:N1}%"
+    public string FullPath => Node.FullPath;
+
+    public string Type => _localizationService.GetString($"NodeType_{Node.NodeType}");
+
+    public long SizeBytes => Node.SizeBytes;
+
+    public string Size => ByteSizeFormatter.Format(Node.SizeBytes);
+
+    public string PercentOfRoot => _rootSizeBytes > 0
+        ? $"{Node.SizeBytes * 100d / _rootSizeBytes:N1}%"
         : "0.0%";
 
-    public double PercentValue { get; } = rootSizeBytes > 0
-        ? node.SizeBytes * 100d / rootSizeBytes
+    public double PercentValue => _rootSizeBytes > 0
+        ? Node.SizeBytes * 100d / _rootSizeBytes
         : 0;
 
-    public int FileCount { get; } = node.FileCount;
+    public int FileCount => Node.FileCount;
 
-    public int DirectoryCount { get; } = node.DirectoryCount;
+    public int DirectoryCount => Node.DirectoryCount;
 
-    /// <summary>
-    /// Virtual groups carry a language-neutral "#others" placeholder name from the
-    /// scanner; render the localized aggregate label instead.
-    /// </summary>
-    private static string ResolveName(ScanNode node)
+    /// <summary>Releases the language subscription early; the weak link would get there anyway.</summary>
+    public void Detach() => _localization.Detach();
+
+    private void OnLanguageChanged()
     {
-        if (node.NodeType == ScanNodeType.VirtualGroup)
-        {
-            return LocalizationService.Instance.Format("NodeType_OtherFormat", node.AggregatedItemCount);
-        }
-
-        return node.Name;
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Type)));
     }
 }

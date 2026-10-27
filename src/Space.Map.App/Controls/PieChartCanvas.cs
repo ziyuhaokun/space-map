@@ -51,6 +51,7 @@ public sealed class PieChartCanvas : FrameworkElement
 
     private readonly List<PieSlice> _slices = [];
     private ScanNodeSummary? _hoveredItem;
+    private string? _lastToolTip;
     private Point _chartCenter;
     private double _outerRadius;
     private double _innerRadius;
@@ -68,6 +69,9 @@ public sealed class PieChartCanvas : FrameworkElement
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
+        // Loaded can fire again after a reparent; -= first so the handler is not
+        // subscribed twice (which would repaint twice per language switch).
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
         LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
         InvalidateVisual();
     }
@@ -193,11 +197,19 @@ public sealed class PieChartCanvas : FrameworkElement
             InvalidateVisual();
         }
 
-        ToolTip = newHover is { } item
+        // MouseMove fires continuously; only touch ToolTip when the text actually
+        // changes, otherwise every move rebuilds the tooltip object and its visual.
+        var toolTip = newHover is { } item
             ? $"{item.Name}\n{item.Size} · {item.PercentOfRoot}\n{item.FullPath}"
             : slice?.ColorIndex == -1
                 ? $"{Loc.GetString("Chart_OtherSlice")}\n{Loc.GetString("Chart_OtherSliceHint")}"
                 : null;
+
+        if (!string.Equals(toolTip, _lastToolTip, StringComparison.Ordinal))
+        {
+            _lastToolTip = toolTip;
+            ToolTip = toolTip;
+        }
     }
 
     protected override void OnMouseLeave(MouseEventArgs e)

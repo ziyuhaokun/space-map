@@ -22,9 +22,19 @@ public static class ChartPalette
 
     public static int Count => Colors.Length;
 
-    public static Color GetColor(int index) => Colors[Math.Abs(index) % Colors.Length];
+    public static Color GetColor(int index) => Colors[Wrap(index, Colors.Length)];
 
-    public static SolidColorBrush GetBrush(int index) => Brushes[Math.Abs(index) % Brushes.Length];
+    public static SolidColorBrush GetBrush(int index) => Brushes[Wrap(index, Brushes.Length)];
+
+    /// <summary>
+    /// Non-negative modulo. Math.Abs would throw OverflowException on int.MinValue,
+    /// and negative indices are legal here because callers use -1 for "other".
+    /// </summary>
+    private static int Wrap(int index, int length)
+    {
+        var wrapped = index % length;
+        return wrapped < 0 ? wrapped + length : wrapped;
+    }
 
     private static SolidColorBrush[] CreateBrushes(IReadOnlyList<Color> colors)
     {

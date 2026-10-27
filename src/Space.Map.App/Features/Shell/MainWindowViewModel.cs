@@ -13,23 +13,28 @@ namespace Space.Map.App.ViewModels;
 public partial class MainWindowViewModel : ObservableObject, IDisposable
 {
     private readonly IThemeService _themeService;
+    private readonly ILocalizationService _localization;
     private bool _isDisposed;
 
     public MainWindowViewModel(
         IDiskScanner scanner,
         IFolderPicker folderPicker,
         IShellActions shellActions,
+        IClipboardService clipboardService,
         IThemeService themeService,
-        IDriveService driveService)
+        IDriveService driveService,
+        ILocalizationService localization)
     {
         _themeService = themeService;
+        _localization = localization;
 
-        Navigation = new WorkspaceNavigationViewModel(shellActions);
+        Navigation = new WorkspaceNavigationViewModel(shellActions, clipboardService, localization);
 
         Scan = new ScanSessionViewModel(
             scanner,
             folderPicker,
             driveService,
+            localization,
             Navigation,
             hideDriveHome: () => IsDriveHomeVisible = false,
             showDriveHome: () => IsDriveHomeVisible = true,
@@ -38,6 +43,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         DriveHome = new DriveHomeViewModel(
             Scan,
             driveService,
+            localization,
             showDriveHome: () => IsDriveHomeVisible = true,
             isHostDisposed: () => _isDisposed);
 
@@ -45,10 +51,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         UpdateThemeToggleState();
         DriveHome.RefreshDrivesCommand.Execute(null);
 
-        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        _localization.LanguageChanged += OnLanguageChanged;
     }
 
-    private static ILocalizationService Loc => LocalizationService.Instance;
 
     /// <summary>
     /// Everything the shell renders from C# (status text, node/issue labels, drive
@@ -65,16 +70,17 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         UpdateLanguageButtonLabel();
         UpdateThemeToggleState();
 
+        // Drive cards and the scan's row collections refresh themselves: those rows
+        // resolve their labels on read and re-notify on this same event.
         Scan.RefreshLocalization();
         Navigation.RefreshLocalization();
-        DriveHome.RefreshLocalization();
     }
 
     private void UpdateLanguageButtonLabel()
     {
         // Label shows the language you would switch TO, not the current one.
-        LanguageButtonLabel = Loc.GetString(
-            Loc.CurrentLanguage == "zh-CN" ? "TitleBar_LanguageToEnglish" : "TitleBar_LanguageToChinese");
+        LanguageButtonLabel = _localization.GetString(
+            _localization.CurrentLanguage == "zh-CN" ? "TitleBar_LanguageToEnglish" : "TitleBar_LanguageToChinese");
     }
 
     public ScanSessionViewModel Scan { get; }
@@ -129,11 +135,16 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     }
 
     [RelayCommand]
+    // Cannot be static: [RelayCommand] generates an instance command that calls it.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage(
+        "Performance",
+        "CA1822:Mark members as static",
+        Justification = "Command target of the generated RelayCommand; must stay an instance method.")]
     private void ToggleLanguage()
     {
         // SetLanguage raises LanguageChanged, which drives UpdateLanguageButtonLabel
         // and the per-view-model rebuilds.
-        LocalizationService.Instance.ToggleLanguage();
+        _localization.ToggleLanguage();
     }
 
     [RelayCommand]
@@ -175,18 +186,20 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         var isDark = _themeService.IsDarkTheme;
         IsDarkTheme = isDark;
-        ThemeToggleToolTip = Loc.GetString(isDark ? "TitleBar_Theme_Light" : "TitleBar_Theme_Dark");
+        ThemeToggleToolTip = _localization.GetString(isDark ? "TitleBar_Theme_Light" : "TitleBar_Theme_Dark");
     }
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+
         if (_isDisposed)
         {
             return;
         }
 
         _isDisposed = true;
-        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+        _localization.LanguageChanged -= OnLanguageChanged;
         Scan.Dispose();
         AppLog.Information("MainWindowViewModel disposed.");
     }

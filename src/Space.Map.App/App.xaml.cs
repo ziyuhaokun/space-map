@@ -19,6 +19,7 @@ public partial class App : Application
     {
         RegisterGlobalExceptionHandlers();
         AppLog.Initialize();
+        AppLog.TrimOldLogs();
         AppLog.Information("Application starting.");
         AppLog.Information($"Log file: {AppLog.CurrentLogFile}");
 
@@ -26,7 +27,9 @@ public partial class App : Application
         {
             var themeService = new WpfUiThemeService();
 
-            // A saved choice wins; otherwise keep following the system theme.
+            // Resolve the theme before any window exists: App.xaml's ThemesDictionary
+            // is a placeholder, so whatever is set here is what the first frame draws.
+            // Applying it after the window shows made a dark desktop flash light.
             if (!themeService.ApplySavedTheme())
             {
                 ApplicationThemeManager.ApplySystemTheme(updateAccent: true);
@@ -60,10 +63,12 @@ public partial class App : Application
         var identityResolver = new WindowsDirectoryIdentityResolver();
         return new MainWindowViewModel(
             new FileSystemDiskScanner(identityResolver),
-            new WindowsFolderPicker(),
+            new WpfFolderPicker(),
             new WindowsShellActions(),
+            new WpfClipboardService(),
             themeService,
-            new SystemDriveService());
+            new SystemDriveService(),
+            LocalizationService.Instance);
     }
 
     private void RegisterGlobalExceptionHandlers()

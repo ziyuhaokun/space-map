@@ -6,6 +6,11 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <!--
+                  Placeholder only: App's constructor replaces this with the saved or
+                  system theme before the first window is created, so nothing renders
+                  with it.
+                -->
                 <ui:ThemesDictionary Theme="Light" />
                 <ui:ControlsDictionary />
                 <ResourceDictionary Source="Themes/ShellStyles.xaml" />

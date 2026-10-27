@@ -14,36 +14,26 @@ public partial class DriveHomeViewModel : ObservableObject
 {
     private readonly ScanSessionViewModel _scan;
     private readonly IDriveService _driveService;
+    private readonly ILocalizationService _localization;
     private readonly Action _showDriveHome;
     private readonly Func<bool> _isHostDisposed;
 
     public DriveHomeViewModel(
         ScanSessionViewModel scan,
         IDriveService driveService,
+        ILocalizationService localization,
         Action showDriveHome,
         Func<bool> isHostDisposed)
     {
         _scan = scan;
+        _localization = localization;
         _driveService = driveService;
         _showDriveHome = showDriveHome;
         _isHostDisposed = isHostDisposed;
         _scan.PropertyChanged += OnScanPropertyChanged;
     }
 
-    private static ILocalizationService Loc => LocalizationService.Instance;
-
     public ObservableCollection<DriveEntry> Drives { get; } = [];
-
-    /// <summary>Re-enumerates drives so card labels pick up the new language.</summary>
-    public void RefreshLocalization()
-    {
-        if (_isHostDisposed())
-        {
-            return;
-        }
-
-        RefreshDrives();
-    }
 
     private void OnScanPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -66,7 +56,7 @@ public partial class DriveHomeViewModel : ObservableObject
 
         _showDriveHome();
         RefreshDrives();
-        _scan.SetStatus(Loc.GetString("Status_SelectPath"));
+        _scan.SetStatus(_localization.GetString("Status_SelectPath"));
         AppLog.Debug("Drive home shown.");
     }
 
@@ -78,7 +68,7 @@ public partial class DriveHomeViewModel : ObservableObject
             return;
         }
 
-        Drives.Clear();
+        Drives.DetachAndClear();
 
         try
         {
@@ -90,13 +80,13 @@ public partial class DriveHomeViewModel : ObservableObject
 
             if (Drives.Count == 0)
             {
-                _scan.SetStatus(Loc.GetString("Drive_NoDrives"));
+                _scan.SetStatus(_localization.GetString("Drive_NoDrives"));
             }
         }
         catch (Exception exception)
         {
             AppLog.Warning($"Failed to enumerate drives: {exception.Message}");
-            _scan.SetStatus(Loc.GetString("Drive_EnumerateFailed"));
+            _scan.SetStatus(_localization.GetString("Drive_EnumerateFailed"));
         }
     }
 
@@ -110,8 +100,8 @@ public partial class DriveHomeViewModel : ObservableObject
 
         _scan.SelectedPath = drive.RootPath;
         _scan.SetStatus(drive.IsReady
-            ? Loc.Format("Drive_Selected", drive.DisplayName)
-            : Loc.Format("Drive_NotReadyFormat", drive.DisplayName));
+            ? _localization.Format("Drive_Selected", drive.DisplayName)
+            : _localization.Format("Drive_NotReadyFormat", drive.DisplayName));
     }
 
     [RelayCommand(CanExecute = nameof(CanInteract))]
@@ -125,7 +115,7 @@ public partial class DriveHomeViewModel : ObservableObject
         _scan.SelectedPath = drive.RootPath;
         if (!_scan.StartScanCommand.CanExecute(null))
         {
-            _scan.SetStatus(Loc.GetString("Drive_CannotScan"));
+            _scan.SetStatus(_localization.GetString("Drive_CannotScan"));
             return;
         }
 

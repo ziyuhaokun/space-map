@@ -1,8 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
-    <system:String x:Key="App_Title">Space.Map</system:String>
-    <system:String x:Key="TitleBar_Settings">Settings</system:String>
     <system:String x:Key="TitleBar_ToggleLanguage">Switch Language (EN/中)</system:String>
     <system:String x:Key="TitleBar_Theme_Dark">Switch to Dark Mode</system:String>
     <system:String x:Key="TitleBar_Theme_Light">Switch to Light Mode</system:String>
@@ -48,7 +46,6 @@
     <system:String x:Key="Grid_Files">Files</system:String>
     <system:String x:Key="Grid_Directories">Folders</system:String>
     <system:String x:Key="Grid_Path">Path</system:String>
-    <system:String x:Key="Grid_Extension">Extension</system:String>
 
     <system:String x:Key="Stats_TotalSize">Total Size</system:String>
     <system:String x:Key="Stats_Files">Files</system:String>
@@ -62,10 +59,7 @@
     <system:String x:Key="Detail_OpenLocation">Open in Explorer</system:String>
     <system:String x:Key="Detail_CopyPath">Copy Path</system:String>
     <system:String x:Key="Detail_DirectSize">Size</system:String>
-    <system:String x:Key="Detail_ItemCount">Items</system:String>
-    <system:String x:Key="Detail_ModifiedTime">Modified</system:String>
 
-    <system:String x:Key="Status_Ready">Ready</system:String>
     <system:String x:Key="Status_NoResult">No result</system:String>
     <system:String x:Key="Status_NotScanned">Not scanned yet</system:String>
     <system:String x:Key="Status_Preparing">Preparing</system:String>
@@ -79,7 +73,6 @@
     <system:String x:Key="Status_CanceledWithResult">Scan canceled, partial result kept</system:String>
     <system:String x:Key="Status_Completed">Scan completed</system:String>
     <system:String x:Key="Status_CompletedPartial">Scan completed, some paths were skipped</system:String>
-    <system:String x:Key="Status_TruncatedFormat">{0} (showing first {1} issues)</system:String>
     <system:String x:Key="Status_CompletedTruncated">Scan completed (showing first {0} issues)</system:String>
     <system:String x:Key="Status_CanceledWithResultTruncated">Scan canceled, partial result kept (showing first {0} issues)</system:String>
     <system:String x:Key="Status_CompletedPartialTruncated">Scan completed, some paths were skipped (showing first {0} issues)</system:String>
@@ -100,7 +93,6 @@
     <system:String x:Key="ResultStatus_Scanning">Scanning</system:String>
 
     <system:String x:Key="Issues_HeaderFormat">Scan Issues ({0})</system:String>
-    <system:String x:Key="Issues_TruncatedHint">Only the first {0} issues are listed</system:String>
 
     <system:String x:Key="NodeType_Drive">Drive</system:String>
     <system:String x:Key="NodeType_Directory">Folder</system:String>

@@ -1,9 +1,14 @@
 using Microsoft.Win32;
 using Space.Map.Core.Abstractions;
 
-namespace Space.Map.Infrastructure.Platform;
+namespace Space.Map.App.Services;
 
-public sealed class WindowsFolderPicker : IFolderPicker
+/// <summary>
+/// The folder picker is a UI concern (it is a WPF dialog), so it lives in the App
+/// layer. Keeping it out of Infrastructure lets that assembly stay free of any UI
+/// framework reference, which in turn keeps the test project on plain net10.0.
+/// </summary>
+public sealed class WpfFolderPicker : IFolderPicker
 {
     public string? PickFolder(string? initialDirectory, string? title = null)
     {
@@ -15,8 +20,7 @@ public sealed class WindowsFolderPicker : IFolderPicker
 
         var dialog = new OpenFolderDialog
         {
-            // Infrastructure has no access to the App's resource dictionaries, so the
-            // caller-supplied title keeps this layer free of user-facing strings.
+            // The caller supplies the caption so this layer stays free of UI strings.
             Title = title ?? "Select folder",
             InitialDirectory = startDirectory,
             Multiselect = false

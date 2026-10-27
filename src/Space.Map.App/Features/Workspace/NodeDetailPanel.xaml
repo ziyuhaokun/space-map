@@ -28,7 +28,7 @@
                                    VerticalAlignment="Center"
                                    FontSize="54"
                                    Foreground="#FF6E90FF"
-                                   Symbol="Folder24" />
+                                   Symbol="{Binding Navigation.DetailIconSymbol}" />
                 </Border>
 
                 <StackPanel Grid.Column="1"
@@ -38,11 +38,13 @@
                                    FontWeight="SemiBold"
                                    Foreground="{DynamicResource TextFillColorPrimaryBrush}"
                                    Text="{Binding Navigation.SelectedNodeName}" />
+                        <!-- Only meaningful while something is selected. -->
                         <Border Margin="12,4,0,0"
                                 Padding="8,3"
                                 VerticalAlignment="Top"
                                 Background="#203A84D8"
-                                CornerRadius="4">
+                                CornerRadius="4"
+                                Visibility="{Binding Navigation.HasDetailSelection, Converter={StaticResource BooleanToVisibilityConverter}}">
                             <TextBlock FontSize="12"
                                        Foreground="#FF66A6FF"
                                        Text="{DynamicResource Detail_CurrentSelected}" />

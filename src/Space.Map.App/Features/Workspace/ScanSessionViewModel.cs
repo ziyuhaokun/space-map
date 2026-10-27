@@ -19,6 +19,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     private readonly IDiskScanner _scanner;
     private readonly IFolderPicker _folderPicker;
     private readonly IDriveService _driveService;
+    private readonly ILocalizationService _localization;
     private readonly WorkspaceNavigationViewModel _navigation;
     private readonly Action _hideDriveHome;
     private readonly Action _showDriveHome;
@@ -41,6 +42,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
         IDiskScanner scanner,
         IFolderPicker folderPicker,
         IDriveService driveService,
+        ILocalizationService localization,
         WorkspaceNavigationViewModel navigation,
         Action hideDriveHome,
         Action showDriveHome,
@@ -49,21 +51,20 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
         _scanner = scanner;
         _folderPicker = folderPicker;
         _driveService = driveService;
+        _localization = localization;
         _navigation = navigation;
         _hideDriveHome = hideDriveHome;
         _showDriveHome = showDriveHome;
         _isHostDisposed = isHostDisposed;
         SystemDriveLabel = _driveService.ResolveSystemDriveRoot();
-        StatusText = Loc.GetString(_statusKey);
-        CurrentPath = Loc.GetString("Status_NotScanned");
-        ResultStatus = Loc.GetString(_resultStatusKey);
+        StatusText = _localization.GetString(_statusKey);
+        CurrentPath = _localization.GetString("Status_NotScanned");
+        ResultStatus = _localization.GetString(_resultStatusKey);
 
         WeakReferenceMessenger.Default.Register<ScanSessionViewModel, Space.Map.App.Messages.StatusChangedMessage>(
             this,
             (recipient, message) => recipient.SetStatus(message.Status));
     }
-
-    private static ILocalizationService Loc => LocalizationService.Instance;
 
     public ObservableCollection<ScanNodeSummary> LargeFiles { get; } = [];
 
@@ -110,7 +111,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     [NotifyPropertyChangedFor(nameof(IssuesHeader))]
     private string _issueCount = "0";
 
-    public string IssuesHeader => Loc.Format("Issues_HeaderFormat", IssueCount);
+    public string IssuesHeader => _localization.Format("Issues_HeaderFormat", IssueCount);
 
     [ObservableProperty]
     private string _skippedCount = "0";
@@ -146,20 +147,20 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     {
         _statusKey = key;
         _statusArgs = args;
-        StatusText = Loc.Format(key, args);
+        StatusText = _localization.Format(key, args);
     }
 
     private void SetResultStatusKey(string key, params object[] args)
     {
         _resultStatusKey = key;
         _resultStatusArgs = args;
-        ResultStatus = Loc.Format(key, args);
+        ResultStatus = _localization.Format(key, args);
     }
 
     private void SetCurrentPathKey(string key)
     {
         _currentPathIsLiteral = false;
-        CurrentPath = Loc.GetString(key);
+        CurrentPath = _localization.GetString(key);
     }
 
     /// <summary>
@@ -175,22 +176,22 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
         }
 
         StatusText = _statusArgs.Length == 0
-            ? Loc.GetString(_statusKey)
-            : Loc.Format(_statusKey, _statusArgs);
+            ? _localization.GetString(_statusKey)
+            : _localization.Format(_statusKey, _statusArgs);
 
         ResultStatus = _resultStatusArgs.Length == 0
-            ? Loc.GetString(_resultStatusKey)
-            : Loc.Format(_resultStatusKey, _resultStatusArgs);
+            ? _localization.GetString(_resultStatusKey)
+            : _localization.Format(_resultStatusKey, _resultStatusArgs);
 
         if (!_currentPathIsLiteral)
         {
-            CurrentPath = Loc.GetString(_currentPathKey);
+            CurrentPath = _localization.GetString(_currentPathKey);
         }
 
         OnPropertyChanged(nameof(IssuesHeader));
 
-        RebuildIssues();
-        RebuildLargeFiles();
+        // The issue and large-file rows refresh themselves on the same event, so
+        // there is nothing to rebuild here.
     }
 
     // Tracks which resource key produced the non-literal CurrentPath text.
@@ -205,7 +206,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     [RelayCommand(CanExecute = nameof(CanBrowse))]
     private void Browse()
     {
-        var selected = _folderPicker.PickFolder(SelectedPath, Loc.GetString("Dialog_SelectScanFolder"));
+        var selected = _folderPicker.PickFolder(SelectedPath, _localization.GetString("Dialog_SelectScanFolder"));
         if (!string.IsNullOrWhiteSpace(selected))
         {
             SelectedPath = selected;
@@ -386,7 +387,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
         ScannedDirectories = progress.ScannedDirectories.ToString("N0");
         ScannedBytes = ByteSizeFormatter.Format(progress.TotalBytes);
         CurrentPath = string.IsNullOrWhiteSpace(progress.CurrentPath)
-            ? Loc.GetString("Status_Preparing")
+            ? _localization.GetString("Status_Preparing")
             : progress.CurrentPath;
         _currentPathIsLiteral = !string.IsNullOrWhiteSpace(progress.CurrentPath);
         if (!_currentPathIsLiteral)
@@ -470,7 +471,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
 
     private void RebuildIssues()
     {
-        Issues.Clear();
+        Issues.DetachAndClear();
 
         if (_lastResult is null)
         {
@@ -488,7 +489,7 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
 
     private void RebuildLargeFiles()
     {
-        LargeFiles.Clear();
+        LargeFiles.DetachAndClear();
 
         if (_lastResult?.Root is null)
         {
@@ -499,15 +500,15 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
         var topFiles = _lastResult.TopFiles;
         for (var index = 0; index < topFiles.Count; index++)
         {
-            LargeFiles.Add(new ScanNodeSummary(topFiles[index], rootSize, index));
+            LargeFiles.Add(new ScanNodeSummary(topFiles[index], rootSize, _localization, index));
         }
     }
 
     private void ResetScanState()
     {
         _lastResult = null;
-        LargeFiles.Clear();
-        Issues.Clear();
+        LargeFiles.DetachAndClear();
+        Issues.DetachAndClear();
         _navigation.Reset();
         IsIssuesPanelExpanded = false;
         TotalSize = ByteSizeFormatter.Format(0);
@@ -526,6 +527,8 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+
         if (_isDisposed)
         {
             return;

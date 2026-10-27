@@ -20,7 +20,6 @@
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Costura.Fody" PrivateAssets="all" />
     <PackageReference Include="WPF-UI" />
   </ItemGroup>
 

@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Windows;
 using Space.Map.Core.Abstractions;
 
 namespace Space.Map.Infrastructure.Platform;
@@ -24,24 +23,6 @@ public sealed class WindowsShellActions : IShellActions
                 UseShellExecute = true
             });
 
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public bool TryCopyPath(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return false;
-        }
-
-        try
-        {
-            Clipboard.SetText(path);
             return true;
         }
         catch
