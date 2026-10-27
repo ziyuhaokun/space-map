@@ -3,9 +3,11 @@
                     xmlns:system="clr-namespace:System;assembly=mscorlib">
     <system:String x:Key="App_Title">Space.Map</system:String>
     <system:String x:Key="TitleBar_Settings">Settings</system:String>
-    <system:String x:Key="TitleBar_ToggleLanguage">Language / 切换语言 (EN/中)</system:String>
+    <system:String x:Key="TitleBar_ToggleLanguage">Switch Language (EN/中)</system:String>
     <system:String x:Key="TitleBar_Theme_Dark">Switch to Dark Mode</system:String>
     <system:String x:Key="TitleBar_Theme_Light">Switch to Light Mode</system:String>
+    <system:String x:Key="TitleBar_LanguageToEnglish">EN</system:String>
+    <system:String x:Key="TitleBar_LanguageToChinese">中</system:String>
 
     <system:String x:Key="Toolbar_Browse">Select Folder</system:String>
     <system:String x:Key="Toolbar_SystemDrive">System Drive</system:String>
@@ -26,9 +28,18 @@
     <system:String x:Key="DriveHome_TotalFormat">Total {0}</system:String>
     <system:String x:Key="DriveHome_Select">Select</system:String>
     <system:String x:Key="DriveHome_Scan">Scan</system:String>
-    <system:String x:Key="DriveHome_FixedDrive">Local Fixed Disk</system:String>
     <system:String x:Key="DriveHome_Ready">Ready</system:String>
     <system:String x:Key="DriveHome_NotReady">Not Ready</system:String>
+
+    <system:String x:Key="DriveCategory_Fixed">Local Disk</system:String>
+    <system:String x:Key="DriveCategory_Removable">Removable</system:String>
+    <system:String x:Key="DriveCategory_Network">Network</system:String>
+    <system:String x:Key="DriveCategory_CdRom">Optical</system:String>
+    <system:String x:Key="DriveCategory_Ram">RAM Disk</system:String>
+    <system:String x:Key="DriveCategory_Unknown">Unknown</system:String>
+    <system:String x:Key="DriveCategory_NoRootDirectory">No Root</system:String>
+    <system:String x:Key="DriveDisplay_WithLabel">{0} ({1})</system:String>
+    <system:String x:Key="DriveDisplay_NoLabel">{0} ({1})</system:String>
 
     <system:String x:Key="Grid_Name">Name</system:String>
     <system:String x:Key="Grid_Type">Type</system:String>
@@ -55,28 +66,90 @@
     <system:String x:Key="Detail_ModifiedTime">Modified</system:String>
 
     <system:String x:Key="Status_Ready">Ready</system:String>
-    <system:String x:Key="Status_Scanning">Scanning: {0}</system:String>
-    <system:String x:Key="Status_Completed">Scan completed</system:String>
+    <system:String x:Key="Status_NoResult">No result</system:String>
+    <system:String x:Key="Status_NotScanned">Not scanned yet</system:String>
+    <system:String x:Key="Status_Preparing">Preparing</system:String>
+    <system:String x:Key="Status_SelectPath">Select a drive to start, or pick a folder from the toolbar</system:String>
+    <system:String x:Key="Status_PathEmpty">Path cannot be empty</system:String>
+    <system:String x:Key="Status_ValidatingPath">Validating path</system:String>
+    <system:String x:Key="Status_Scanning">Scanning</system:String>
+    <system:String x:Key="Status_ScanningFirstLevel">Scanning ({0} top-level items done)</system:String>
+    <system:String x:Key="Status_Canceling">Canceling</system:String>
     <system:String x:Key="Status_Canceled">Scan canceled</system:String>
-    <system:String x:Key="Status_ValidatingPath">Validating path: {0}</system:String>
-    <system:String x:Key="Status_PathNotFound">Path does not exist: {0}</system:String>
-    <system:String x:Key="Status_PathAccessDenied">Cannot access path: {0}</system:String>
-    <system:String x:Key="Status_ScanFailed">Scan failed: {0}</system:String>
+    <system:String x:Key="Status_CanceledWithResult">Scan canceled, partial result kept</system:String>
+    <system:String x:Key="Status_Completed">Scan completed</system:String>
+    <system:String x:Key="Status_CompletedPartial">Scan completed, some paths were skipped</system:String>
+    <system:String x:Key="Status_TruncatedFormat">{0} (showing first {1} issues)</system:String>
+    <system:String x:Key="Status_CompletedTruncated">Scan completed (showing first {0} issues)</system:String>
+    <system:String x:Key="Status_CanceledWithResultTruncated">Scan canceled, partial result kept (showing first {0} issues)</system:String>
+    <system:String x:Key="Status_CompletedPartialTruncated">Scan completed, some paths were skipped (showing first {0} issues)</system:String>
+    <system:String x:Key="Status_PathNotFound">Path does not exist</system:String>
+    <system:String x:Key="Status_ScanFailed">Scan failed</system:String>
     <system:String x:Key="Status_Elapsed">Elapsed</system:String>
     <system:String x:Key="Status_Skipped">Skipped</system:String>
-    <system:String x:Key="Status_TruncatedHint">Issues truncated to {0}</system:String>
+    <system:String x:Key="Status_TotalSize">Total</system:String>
+    <system:String x:Key="Status_Scanned">Scanned</system:String>
+    <system:String x:Key="Status_Files">Files</system:String>
+    <system:String x:Key="Status_Directories">Folders</system:String>
+    <system:String x:Key="Status_Issues">Issues</system:String>
+
+    <system:String x:Key="ResultStatus_Completed">Done</system:String>
+    <system:String x:Key="ResultStatus_Canceled">Canceled</system:String>
+    <system:String x:Key="ResultStatus_Partial">Partial</system:String>
+    <system:String x:Key="ResultStatus_Failed">Failed</system:String>
+    <system:String x:Key="ResultStatus_Scanning">Scanning</system:String>
 
     <system:String x:Key="Issues_HeaderFormat">Scan Issues ({0})</system:String>
-    <system:String x:Key="NodeType_Directory">Directory</system:String>
+    <system:String x:Key="Issues_TruncatedHint">Only the first {0} issues are listed</system:String>
+
+    <system:String x:Key="NodeType_Drive">Drive</system:String>
+    <system:String x:Key="NodeType_Directory">Folder</system:String>
     <system:String x:Key="NodeType_File">File</system:String>
-    <system:String x:Key="NodeType_VirtualGroup">Virtual Group</system:String>
+    <system:String x:Key="NodeType_VirtualGroup">Group</system:String>
     <system:String x:Key="NodeType_OtherFormat">Others ({0})</system:String>
 
-    <system:String x:Key="IssueKind_AccessDenied">Access Denied</system:String>
-    <system:String x:Key="IssueKind_PathNotFound">Path Not Found</system:String>
+    <system:String x:Key="IssueKind_UnauthorizedAccess">Access Denied</system:String>
     <system:String x:Key="IssueKind_PathTooLong">Path Too Long</system:String>
-    <system:String x:Key="IssueKind_ReparseCycle">Reparse Point Cycle</system:String>
-    <system:String x:Key="IssueKind_IOError">IO Error</system:String>
-    <system:String x:Key="IssueKind_Unauthorized">Unauthorized</system:String>
-    <system:String x:Key="IssueKind_Unhandled">Unhandled Error</system:String>
+    <system:String x:Key="IssueKind_PathNotFound">Path Not Found</system:String>
+    <system:String x:Key="IssueKind_Io">IO Error</system:String>
+    <system:String x:Key="IssueKind_ReparsePointSkipped">Reparse Point Skipped</system:String>
+    <system:String x:Key="IssueKind_HiddenSkipped">Hidden Item Skipped</system:String>
+    <system:String x:Key="IssueKind_SystemSkipped">System Item Skipped</system:String>
+    <system:String x:Key="IssueKind_Unknown">Unknown Error</system:String>
+
+    <system:String x:Key="ScanIssue_Message_UnauthorizedAccess">Access to this path was denied.</system:String>
+    <system:String x:Key="ScanIssue_Message_PathTooLong">The path exceeds the maximum supported length.</system:String>
+    <system:String x:Key="ScanIssue_Message_PathNotFound">The path no longer exists.</system:String>
+    <system:String x:Key="ScanIssue_Message_Io">An I/O error occurred while reading this path.</system:String>
+    <system:String x:Key="ScanIssue_Message_ReparsePointSkipped">A reparse point was skipped.</system:String>
+    <system:String x:Key="ScanIssue_Message_HiddenSkipped">A hidden item was skipped.</system:String>
+    <system:String x:Key="ScanIssue_Message_SystemSkipped">A system item was skipped.</system:String>
+    <system:String x:Key="ScanIssue_Message_Unknown">An unexpected error occurred.</system:String>
+    <system:String x:Key="ScanIssue_Message_RootMissing">The scan root does not exist.</system:String>
+    <system:String x:Key="ScanIssue_Message_Detail">{0} (Win32 {1})</system:String>
+
+    <system:String x:Key="Chart_TotalUsage">Total</system:String>
+    <system:String x:Key="Chart_EmptyState">Directory shares appear here once a scan completes.</system:String>
+    <system:String x:Key="Chart_OtherSlice">Others</system:String>
+    <system:String x:Key="Chart_OtherSliceHint">Remaining space outside the top 10</system:String>
+    <system:String x:Key="Treemap_EmptyState">Choose a folder and start a scan to see a size-proportional map here.
+Click a block to drill into its subfolders.</system:String>
+
+    <system:String x:Key="Action_OpenedInExplorer">Opened in Explorer</system:String>
+    <system:String x:Key="Action_OpenFailed">Cannot open the path</system:String>
+    <system:String x:Key="Action_PathCopied">Path copied to clipboard</system:String>
+    <system:String x:Key="Action_CopyFailed">Failed to copy the path</system:String>
+
+    <system:String x:Key="Drive_Selected">Selected {0}</system:String>
+    <system:String x:Key="Drive_NotReadyFormat">Drive not ready: {0}</system:String>
+    <system:String x:Key="Drive_NoDrives">No usable drives found</system:String>
+    <system:String x:Key="Drive_EnumerateFailed">Cannot enumerate drives</system:String>
+    <system:String x:Key="Drive_CannotScan">Cannot scan the selected drive</system:String>
+
+    <system:String x:Key="Dialog_SelectScanFolder">Choose a folder to scan</system:String>
+    <system:String x:Key="Dialog_FatalError">Space.Map hit an unhandled error and wrote it to the log.
+
+{0}
+
+Log file: {1}</system:String>
 </ResourceDictionary>

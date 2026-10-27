@@ -6,6 +6,8 @@
     <system:String x:Key="TitleBar_ToggleLanguage">切换语言 / Language (中/EN)</system:String>
     <system:String x:Key="TitleBar_Theme_Dark">切换到深色模式</system:String>
     <system:String x:Key="TitleBar_Theme_Light">切换到浅色模式</system:String>
+    <system:String x:Key="TitleBar_LanguageToEnglish">EN</system:String>
+    <system:String x:Key="TitleBar_LanguageToChinese">中</system:String>
 
     <system:String x:Key="Toolbar_Browse">选择路径</system:String>
     <system:String x:Key="Toolbar_SystemDrive">选择系统盘</system:String>
@@ -26,9 +28,18 @@
     <system:String x:Key="DriveHome_TotalFormat">共 {0}</system:String>
     <system:String x:Key="DriveHome_Select">选择</system:String>
     <system:String x:Key="DriveHome_Scan">扫描</system:String>
-    <system:String x:Key="DriveHome_FixedDrive">本地固定磁盘</system:String>
     <system:String x:Key="DriveHome_Ready">就绪</system:String>
     <system:String x:Key="DriveHome_NotReady">未就绪</system:String>
+
+    <system:String x:Key="DriveCategory_Fixed">本地磁盘</system:String>
+    <system:String x:Key="DriveCategory_Removable">可移动</system:String>
+    <system:String x:Key="DriveCategory_Network">网络</system:String>
+    <system:String x:Key="DriveCategory_CdRom">光盘</system:String>
+    <system:String x:Key="DriveCategory_Ram">内存盘</system:String>
+    <system:String x:Key="DriveCategory_Unknown">未知</system:String>
+    <system:String x:Key="DriveCategory_NoRootDirectory">无根目录</system:String>
+    <system:String x:Key="DriveDisplay_WithLabel">{0} ({1})</system:String>
+    <system:String x:Key="DriveDisplay_NoLabel">{0} ({1})</system:String>
 
     <system:String x:Key="Grid_Name">名称</system:String>
     <system:String x:Key="Grid_Type">类型</system:String>
@@ -55,28 +66,90 @@
     <system:String x:Key="Detail_ModifiedTime">修改时间</system:String>
 
     <system:String x:Key="Status_Ready">就绪</system:String>
-    <system:String x:Key="Status_Scanning">正在扫描: {0}</system:String>
-    <system:String x:Key="Status_Completed">扫描完成</system:String>
+    <system:String x:Key="Status_NoResult">无结果</system:String>
+    <system:String x:Key="Status_NotScanned">尚未开始扫描</system:String>
+    <system:String x:Key="Status_Preparing">准备扫描</system:String>
+    <system:String x:Key="Status_SelectPath">选择磁盘开始扫描，或通过工具栏选择目录</system:String>
+    <system:String x:Key="Status_PathEmpty">路径不能为空</system:String>
+    <system:String x:Key="Status_ValidatingPath">正在验证路径</system:String>
+    <system:String x:Key="Status_Scanning">扫描中</system:String>
+    <system:String x:Key="Status_ScanningFirstLevel">扫描中（一级已完成 {0} 项）</system:String>
+    <system:String x:Key="Status_Canceling">正在取消</system:String>
     <system:String x:Key="Status_Canceled">扫描已取消</system:String>
-    <system:String x:Key="Status_ValidatingPath">正在验证路径: {0}</system:String>
-    <system:String x:Key="Status_PathNotFound">路径不存在: {0}</system:String>
-    <system:String x:Key="Status_PathAccessDenied">无法访问路径: {0}</system:String>
-    <system:String x:Key="Status_ScanFailed">扫描失败: {0}</system:String>
+    <system:String x:Key="Status_CanceledWithResult">扫描已取消，已保留部分结果</system:String>
+    <system:String x:Key="Status_Completed">扫描完成</system:String>
+    <system:String x:Key="Status_CompletedPartial">扫描完成，部分路径被跳过</system:String>
+    <system:String x:Key="Status_TruncatedFormat">{0}（问题明细前 {1} 条）</system:String>
+    <system:String x:Key="Status_CompletedTruncated">扫描完成（问题明细前 {0} 条）</system:String>
+    <system:String x:Key="Status_CanceledWithResultTruncated">扫描已取消，已保留部分结果（问题明细前 {0} 条）</system:String>
+    <system:String x:Key="Status_CompletedPartialTruncated">扫描完成，部分路径被跳过（问题明细前 {0} 条）</system:String>
+    <system:String x:Key="Status_PathNotFound">路径不存在</system:String>
+    <system:String x:Key="Status_ScanFailed">扫描失败</system:String>
     <system:String x:Key="Status_Elapsed">耗时</system:String>
     <system:String x:Key="Status_Skipped">跳过</system:String>
-    <system:String x:Key="Status_TruncatedHint">问题仅显示前 {0} 项</system:String>
+    <system:String x:Key="Status_TotalSize">总大小</system:String>
+    <system:String x:Key="Status_Scanned">已统计</system:String>
+    <system:String x:Key="Status_Files">文件</system:String>
+    <system:String x:Key="Status_Directories">目录</system:String>
+    <system:String x:Key="Status_Issues">问题</system:String>
+
+    <system:String x:Key="ResultStatus_Completed">完成</system:String>
+    <system:String x:Key="ResultStatus_Canceled">已取消</system:String>
+    <system:String x:Key="ResultStatus_Partial">部分完成</system:String>
+    <system:String x:Key="ResultStatus_Failed">失败</system:String>
+    <system:String x:Key="ResultStatus_Scanning">扫描中</system:String>
 
     <system:String x:Key="Issues_HeaderFormat">扫描问题 ({0})</system:String>
+    <system:String x:Key="Issues_TruncatedHint">问题仅显示前 {0} 项</system:String>
+
+    <system:String x:Key="NodeType_Drive">磁盘</system:String>
     <system:String x:Key="NodeType_Directory">目录</system:String>
     <system:String x:Key="NodeType_File">文件</system:String>
-    <system:String x:Key="NodeType_VirtualGroup">虚拟组</system:String>
+    <system:String x:Key="NodeType_VirtualGroup">分组</system:String>
     <system:String x:Key="NodeType_OtherFormat">其他 ({0})</system:String>
 
-    <system:String x:Key="IssueKind_AccessDenied">访问拒绝</system:String>
-    <system:String x:Key="IssueKind_PathNotFound">路径不存在</system:String>
+    <system:String x:Key="IssueKind_UnauthorizedAccess">权限不足</system:String>
     <system:String x:Key="IssueKind_PathTooLong">路径过长</system:String>
-    <system:String x:Key="IssueKind_ReparseCycle">符号链接循环</system:String>
-    <system:String x:Key="IssueKind_IOError">IO 错误</system:String>
-    <system:String x:Key="IssueKind_Unauthorized">未授权</system:String>
-    <system:String x:Key="IssueKind_Unhandled">未处理错误</system:String>
+    <system:String x:Key="IssueKind_PathNotFound">路径不存在</system:String>
+    <system:String x:Key="IssueKind_Io">IO 错误</system:String>
+    <system:String x:Key="IssueKind_ReparsePointSkipped">跳过重解析点</system:String>
+    <system:String x:Key="IssueKind_HiddenSkipped">跳过隐藏项</system:String>
+    <system:String x:Key="IssueKind_SystemSkipped">跳过系统项</system:String>
+    <system:String x:Key="IssueKind_Unknown">未知问题</system:String>
+
+    <system:String x:Key="ScanIssue_Message_UnauthorizedAccess">没有访问该路径的权限。</system:String>
+    <system:String x:Key="ScanIssue_Message_PathTooLong">路径超出系统支持的最大长度。</system:String>
+    <system:String x:Key="ScanIssue_Message_PathNotFound">该路径已不存在。</system:String>
+    <system:String x:Key="ScanIssue_Message_Io">读取该路径时发生 IO 错误。</system:String>
+    <system:String x:Key="ScanIssue_Message_ReparsePointSkipped">已跳过重解析点。</system:String>
+    <system:String x:Key="ScanIssue_Message_HiddenSkipped">已跳过隐藏项。</system:String>
+    <system:String x:Key="ScanIssue_Message_SystemSkipped">已跳过系统项。</system:String>
+    <system:String x:Key="ScanIssue_Message_Unknown">发生了未预期的错误。</system:String>
+    <system:String x:Key="ScanIssue_Message_RootMissing">扫描根路径不存在。</system:String>
+    <system:String x:Key="ScanIssue_Message_Detail">{0}（Win32 {1}）</system:String>
+
+    <system:String x:Key="Chart_TotalUsage">总占用</system:String>
+    <system:String x:Key="Chart_EmptyState">扫描完成后，这里会显示各目录占比。</system:String>
+    <system:String x:Key="Chart_OtherSlice">其他</system:String>
+    <system:String x:Key="Chart_OtherSliceHint">未进入 Top 10 的剩余空间</system:String>
+    <system:String x:Key="Treemap_EmptyState">选择目录并开始扫描后，这里会按占用比例显示文件夹画布。
+点击目录块可下钻查看子目录。</system:String>
+
+    <system:String x:Key="Action_OpenedInExplorer">已在资源管理器中打开</system:String>
+    <system:String x:Key="Action_OpenFailed">无法打开路径</system:String>
+    <system:String x:Key="Action_PathCopied">路径已复制到剪贴板</system:String>
+    <system:String x:Key="Action_CopyFailed">复制路径失败</system:String>
+
+    <system:String x:Key="Drive_Selected">已选择 {0}</system:String>
+    <system:String x:Key="Drive_NotReadyFormat">磁盘未就绪：{0}</system:String>
+    <system:String x:Key="Drive_NoDrives">未发现可用磁盘</system:String>
+    <system:String x:Key="Drive_EnumerateFailed">无法枚举磁盘</system:String>
+    <system:String x:Key="Drive_CannotScan">无法扫描所选磁盘</system:String>
+
+    <system:String x:Key="Dialog_SelectScanFolder">选择要扫描的目录</system:String>
+    <system:String x:Key="Dialog_FatalError">程序遇到未处理异常，已写入日志。
+
+{0}
+
+日志位置：{1}</system:String>
 </ResourceDictionary>
