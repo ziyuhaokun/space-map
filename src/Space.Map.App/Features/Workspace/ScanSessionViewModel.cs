@@ -36,7 +36,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     private bool _currentPathIsLiteral;
 
     private ScanResult? _lastResult;
-    private ScanNode? _lastPartialRoot;
 
     public ScanSessionViewModel(
         IDiskScanner scanner,
@@ -408,7 +407,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
 
     private void ApplyPartialRoot(ScanNode partialRoot)
     {
-        _lastPartialRoot = partialRoot;
         TotalSize = ByteSizeFormatter.Format(partialRoot.SizeBytes);
         TotalFiles = partialRoot.FileCount.ToString("N0");
         TotalDirectories = partialRoot.DirectoryCount.ToString("N0");
@@ -420,7 +418,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     private void ApplyResult(ScanResult result)
     {
         _lastResult = result;
-        _lastPartialRoot = null;
 
         SetResultStatusKey(result.Status switch
         {
@@ -510,7 +507,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
     private void ResetScanState()
     {
         _lastResult = null;
-        _lastPartialRoot = null;
         LargeFiles.Clear();
         Issues.Clear();
         _navigation.Reset();

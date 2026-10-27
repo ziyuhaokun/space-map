@@ -164,7 +164,7 @@
                               IsReadOnly="True"
                               ItemsSource="{Binding Scan.LargeFiles}"
                               RowHeight="30"
-                              SelectedItem="{Binding Navigation.SelectedNode, Mode=TwoWay}">
+                              SelectedItem="{Binding Navigation.SelectedLargeFile, Mode=TwoWay}">
                         <DataGrid.Columns>
                             <DataGridTextColumn Width="48"
                                                 Binding="{Binding Rank}"

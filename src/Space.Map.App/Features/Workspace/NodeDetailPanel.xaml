@@ -51,7 +51,7 @@
                     <TextBlock Margin="0,10,0,0"
                                FontSize="13"
                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                               Text="{Binding Navigation.SelectedNode.FullPath}"
+                               Text="{Binding Navigation.DetailNode.FullPath}"
                                TextTrimming="CharacterEllipsis" />
                     <StackPanel Margin="0,12,0,0"
                                 Orientation="Horizontal">
@@ -91,7 +91,7 @@
                         </StackPanel>
                         <TextBlock Foreground="#FF66A6FF"
                                    Style="{StaticResource MetricValueStyle}"
-                                   Text="{Binding Navigation.SelectedNode.Size}" />
+                                   Text="{Binding Navigation.DetailNode.Size}" />
                     </StackPanel>
                 </Border>
                 <Border Margin="10,0,0,0"
@@ -106,7 +106,7 @@
                         </StackPanel>
                         <TextBlock Foreground="{StaticResource ShellGreenBrush}"
                                    Style="{StaticResource MetricValueStyle}"
-                                   Text="{Binding Navigation.SelectedNode.PercentOfRoot}" />
+                                   Text="{Binding Navigation.DetailNode.PercentOfRoot}" />
                     </StackPanel>
                 </Border>
                 <Border Margin="10,0,0,0"
@@ -121,7 +121,7 @@
                         </StackPanel>
                         <TextBlock Foreground="{StaticResource ShellPurpleBrush}"
                                    Style="{StaticResource MetricValueStyle}"
-                                   Text="{Binding Navigation.SelectedNode.FileCount}" />
+                                   Text="{Binding Navigation.DetailNode.FileCount}" />
                     </StackPanel>
                 </Border>
                 <Border Margin="10,0,0,0"
@@ -136,7 +136,7 @@
                         </StackPanel>
                         <TextBlock Foreground="{StaticResource ShellYellowBrush}"
                                    Style="{StaticResource MetricValueStyle}"
-                                   Text="{Binding Navigation.SelectedNode.DirectoryCount}" />
+                                   Text="{Binding Navigation.DetailNode.DirectoryCount}" />
                     </StackPanel>
                 </Border>
             </UniformGrid>

@@ -62,16 +62,30 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     [ObservableProperty]
     private ScanNode? _selectedTreemapNode;
 
+    /// <summary>
+    /// Row selected in the top-files list. Kept apart from <see cref="SelectedNode"/>
+    /// because those files are not children of the current level, so they have no
+    /// <see cref="ScanNodeSummary"/> in <see cref="LevelItems"/> to share.
+    /// </summary>
+    [ObservableProperty]
+    private ScanNodeSummary? _selectedLargeFile;
+
     public bool CanNavigateUp => _session.CanNavigateUp;
 
     public bool HasScanResult => _session.RootNode is not null;
 
     /// <summary>
-    /// Name of the selected node, or the localized placeholder when nothing is
+    /// What the detail panel describes: the level selection, or the top-files row
+    /// when one is picked (those files are not part of the current level).
+    /// </summary>
+    public ScanNodeSummary? DetailNode => SelectedLargeFile ?? SelectedNode;
+
+    /// <summary>
+    /// Name of the detail node, or the localized placeholder when nothing is
     /// selected. A binding cannot carry a DynamicResource into TargetNullValue, so
     /// the fallback text is resolved here and refreshed on a language switch.
     /// </summary>
-    public string SelectedNodeName => SelectedNode?.Name
+    public string SelectedNodeName => DetailNode?.Name
         ?? LocalizationService.Instance.GetString("Detail_NoSelection");
 
     partial void OnSelectedNodeChanged(ScanNodeSummary? value)
@@ -79,6 +93,14 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
         OpenInExplorerCommand.NotifyCanExecuteChanged();
         CopyPathCommand.NotifyCanExecuteChanged();
         OnPropertyChanged(nameof(SelectedNodeName));
+        OnPropertyChanged(nameof(DetailNode));
+
+        // Picking a level node supersedes a top-files row, so the panel cannot keep
+        // showing a file that is no longer what the user just clicked.
+        if (value is not null && SelectedLargeFile is not null)
+        {
+            SelectedLargeFile = null;
+        }
 
         if (value is not null && !ReferenceEquals(SelectedTreemapNode, value.Node))
         {
@@ -87,22 +109,40 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
         }
     }
 
+    partial void OnSelectedLargeFileChanged(ScanNodeSummary? value)
+    {
+        OpenInExplorerCommand.NotifyCanExecuteChanged();
+        CopyPathCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(DetailNode));
+        OnPropertyChanged(nameof(SelectedNodeName));
+    }
+
     partial void OnSelectedTreemapNodeChanged(ScanNode? value)
     {
         if (value is null)
         {
+            if (SelectedNode is not null)
+            {
+                _selectedNode = null;
+                OnPropertyChanged(nameof(SelectedNode));
+            }
+
             return;
         }
 
-        var parentSize = CurrentTreemapNode?.SizeBytes ?? value.SizeBytes;
-        var summary = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, value))
-            ?? new ScanNodeSummary(value, parentSize, 0);
-
-        if (!ReferenceEquals(SelectedNode, summary))
+        // Only adopt a summary that already belongs to this level. Fabricating one
+        // would hand a grid a SelectedItem absent from its ItemsSource, so the grid
+        // would clear it again immediately and the selection would look like it
+        // vanished. Nodes outside the level (the top-files list) are handled by
+        // SelectedLargeFile instead.
+        var summary = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, value));
+        if (summary is null || ReferenceEquals(SelectedNode, summary))
         {
-            _selectedNode = summary;
-            OnPropertyChanged(nameof(SelectedNode));
+            return;
         }
+
+        _selectedNode = summary;
+        OnPropertyChanged(nameof(SelectedNode));
     }
 
     [RelayCommand(CanExecute = nameof(CanNavigateUpCommand))]
@@ -140,7 +180,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanUseShellActions))]
     private void OpenInExplorer()
     {
-        var path = SelectedNode?.FullPath;
+        var path = DetailNode?.FullPath;
         if (string.IsNullOrWhiteSpace(path))
         {
             return;
@@ -159,7 +199,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanUseShellActions))]
     private void CopyPath()
     {
-        var path = SelectedNode?.FullPath;
+        var path = DetailNode?.FullPath;
         if (string.IsNullOrWhiteSpace(path))
         {
             return;
@@ -177,7 +217,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
     private bool CanUseShellActions()
     {
-        var node = SelectedNode?.Node;
+        var node = DetailNode?.Node;
         return node is not null
             && node.NodeType is not ScanNodeType.VirtualGroup
             && !string.IsNullOrWhiteSpace(node.FullPath);
@@ -189,6 +229,7 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
         ChartTopItems.Clear();
         Breadcrumbs.Clear();
         SelectedNode = null;
+        SelectedLargeFile = null;
         SelectedTreemapNode = null;
         CurrentTreemapNode = null;
         _session.Reset();

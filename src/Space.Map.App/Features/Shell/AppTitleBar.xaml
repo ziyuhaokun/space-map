@@ -43,11 +43,6 @@
                            ToolTipService.ToolTip="{Binding ThemeToggleToolTip}">
                     <ContentControl Template="{StaticResource ThemeIconTemplate}" />
                 </ui:Button>
-                <ui:Button Style="{StaticResource TitleBarActionButtonStyle}"
-                           ToolTipService.ToolTip="{DynamicResource TitleBar_Settings}">
-                    <ui:SymbolIcon FontSize="18"
-                                   Symbol="Settings24" />
-                </ui:Button>
             </StackPanel>
         </ui:TitleBar.TrailingContent>
     </ui:TitleBar>
