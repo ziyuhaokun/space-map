@@ -12,8 +12,6 @@ public sealed record ScanOptions(string RootPath)
 
     public bool KeepFileNodes { get; init; } = true;
 
-    public bool ReadFileTimestamps { get; init; } = true;
-
     /// <summary>
     /// Maximum number of largest files to retain during scan (0 = disabled).
     /// Uses a bounded min-heap; memory cost is O(MaxTopFiles).
@@ -29,8 +27,15 @@ public sealed record ScanOptions(string RootPath)
     public int MaxChildrenPerDirectory { get; init; } = 64;
 
     /// <summary>
+    /// Upper bound on <see cref="MaxParallelism"/>, shared with the scanner so both
+    /// agree on where the clamp stops.
+    /// </summary>
+    public const int MaxParallelismLimit = 64;
+
+    /// <summary>
     /// Maximum number of concurrent directory-scan workers (1 = single-threaded).
     /// Larger values speed up SSD/NVMe and network shares; HDDs gain little.
+    /// Values outside 1..<see cref="MaxParallelismLimit"/> are clamped by the scanner.
     /// </summary>
     public int MaxParallelism { get; init; } = Math.Clamp(Environment.ProcessorCount, 1, 8);
 }

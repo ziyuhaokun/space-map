@@ -290,7 +290,6 @@ public partial class ScanSessionViewModel : ObservableObject, IDisposable
                 {
                     FollowReparsePoints = FollowReparsePoints,
                     KeepFileNodes = false,
-                    ReadFileTimestamps = false,
                     MaxTopFiles = 100,
                     MaxChildrenPerDirectory = 64
                 },

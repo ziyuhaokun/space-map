@@ -25,17 +25,24 @@ public sealed class FileSystemDiskScanner : IDiskScanner
         }
 
         return Task.Run(
-            () => new ScannerRun(options, progress, cancellationToken, _identityResolver).Execute(),
+            () => new ScannerRun(options, progress, _identityResolver, cancellationToken).Execute(),
             cancellationToken);
     }
 
     private sealed class ScannerRun(
         ScanOptions options,
         IProgress<ScanProgress>? progress,
-        CancellationToken cancellationToken,
-        IDirectoryIdentityResolver? identityResolver)
+        IDirectoryIdentityResolver? identityResolver,
+        CancellationToken cancellationToken)
     {
         private const int MaxRetainedIssues = 500;
+
+        /// <summary>
+        /// Progress and partial-root reports are throttled to this interval. The
+        /// fan-out refresher timer uses the same period: a faster timer would have
+        /// its wake-ups dropped by the throttle.
+        /// </summary>
+        private const int ProgressThrottleMilliseconds = 500;
 
         private readonly Stopwatch _elapsed = Stopwatch.StartNew();
         private long _lastProgressTicks;
@@ -136,7 +143,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
         /// </summary>
         private ScanNode? ScanDirectory(DirectoryInfo directory)
         {
-            var degree = Math.Clamp(options.MaxParallelism, 1, 64);
+            var degree = Math.Clamp(options.MaxParallelism, 1, ScanOptions.MaxParallelismLimit);
             if (degree <= 1)
             {
                 return ScanTree(directory, isRoot: true, progressSink: null, _mainWorker);
@@ -160,11 +167,13 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             _completedSubtrees = 0;
 
             // 周期刷新器：扫描期间定时推送根级渐进快照（含各子树占位实时累计）。
+            // 周期与进度节流保持一致，否则一半的唤醒会被 TryClaim 直接丢弃。
+            using var refresherDone = new ManualResetEvent(false);
             using var refresher = new Timer(
                 _ => RefreshPartialRoot(state),
                 null,
                 TimeSpan.Zero,
-                TimeSpan.FromMilliseconds(250));
+                TimeSpan.FromMilliseconds(ProgressThrottleMilliseconds));
 
             var workers = StartFanOutWorkers();
             foreach (var worker in workers)
@@ -172,7 +181,14 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 worker.Join();
             }
 
-            refresher.Change(Timeout.Infinite, Timeout.Infinite);
+            // Dispose 本身不等待回调：必须等正在执行的 RefreshPartialRoot 退出，
+            // 否则它可能在扫描已结束后仍上报一次“扫描中”，把完成状态覆盖回去。
+            // 回调卡在 IO 上时不无限等待：_scanCompleted 已置位，后续回调立即返回，
+            // 迟到的那一次最多是重复的“扫描中”上报。
+            _scanCompleted = true;
+            refresher.Dispose(refresherDone);
+            refresherDone.WaitOne(TimeSpan.FromSeconds(2));
+
             if (_fatalException is not null)
             {
                 throw _fatalException;
@@ -232,7 +248,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
         private Thread[] StartFanOutWorkers()
         {
-            var degree = Math.Clamp(options.MaxParallelism, 1, 64);
+            var degree = Math.Clamp(options.MaxParallelism, 1, ScanOptions.MaxParallelismLimit);
             var threads = new Thread[degree];
             for (var index = 0; index < degree; index++)
             {
@@ -268,28 +284,12 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 catch (OperationCanceledException)
                 {
                     _canceled = true;
-                    subtree.Node = CreateDirectoryNode(
-                        subtree.Directory,
-                        [],
-                        0,
-                        0,
-                        0,
-                        ScanNodeStatus.Partial,
-                        "Scan canceled.",
-                        false);
+                    subtree.Node = CreateDirectoryNode(subtree.Directory, [], 0, 0, 0, ScanNodeStatus.Partial);
                 }
                 catch (Exception exception)
                 {
                     Interlocked.CompareExchange(ref _fatalException, exception, null);
-                    subtree.Node = CreateDirectoryNode(
-                        subtree.Directory,
-                        [],
-                        0,
-                        0,
-                        0,
-                        ScanNodeStatus.Partial,
-                        exception.Message,
-                        false);
+                    subtree.Node = CreateDirectoryNode(subtree.Directory, [], 0, 0, 0, ScanNodeStatus.Partial);
                 }
 
                 if (Interlocked.Increment(ref _completedSubtrees) == _subtrees.Count)
@@ -320,7 +320,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             foreach (var subtree in state.Subtrees)
             {
                 var node = subtree.Node
-                    ?? CreateDirectoryNode(subtree.Directory, [], 0, 0, 0, ScanNodeStatus.Partial, "Subtree did not complete.", false);
+                    ?? CreateDirectoryNode(subtree.Directory, [], 0, 0, 0, ScanNodeStatus.Partial);
                 children.Add(node);
                 childBytes += node.SizeBytes;
                 childFiles += node.FileCount;
@@ -333,15 +333,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
             children.AddRange(state.FileNodes);
             var retained = CapChildren(state.Directory.FullName, children);
-            return CreateDirectoryNode(
-                state.Directory,
-                retained,
-                state.OwnBytes + childBytes,
-                state.OwnFiles + childFiles,
-                childDirs,
-                status,
-                status == ScanNodeStatus.Partial ? "One or more child paths were skipped or could not be scanned." : null,
-                false);
+            return CreateDirectoryNode(state.Directory, retained, state.OwnBytes + childBytes, state.OwnFiles + childFiles, childDirs, status);
         }
 
         /// <summary>
@@ -481,8 +473,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
             if (!TryGetAttributes(directory.FullName, worker, out var attributes))
             {
-                terminalNode = CreateDirectoryNode(
-                    directory, [], 0, 0, 0, ScanNodeStatus.Error, "Unable to read directory attributes.", false);
+                terminalNode = CreateDirectoryNode(directory, [], 0, 0, 0, ScanNodeStatus.Error);
                 frame.IsEntered = true;
                 return false;
             }
@@ -494,8 +485,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             {
                 AddIssue(worker, directory.FullName, ScanIssueKind.ReparsePointSkipped, "Reparse point skipped.");
                 worker.SkippedCount++;
-                terminalNode = CreateDirectoryNode(
-                    directory, [], 0, 0, 0, ScanNodeStatus.Skipped, "Reparse point skipped.", true);
+                terminalNode = CreateDirectoryNode(directory, [], 0, 0, 0, ScanNodeStatus.Skipped);
                 frame.IsEntered = true;
                 return false;
             }
@@ -504,8 +494,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             {
                 AddIssue(worker, directory.FullName, skippedKind, skippedMessage);
                 worker.SkippedCount++;
-                terminalNode = CreateDirectoryNode(
-                    directory, [], 0, 0, 0, ScanNodeStatus.Skipped, skippedMessage, isReparsePoint);
+                terminalNode = CreateDirectoryNode(directory, [], 0, 0, 0, ScanNodeStatus.Skipped);
                 frame.IsEntered = true;
                 return false;
             }
@@ -542,8 +531,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             {
                 AddIssue(worker, directory.FullName, ScanIssueKind.Io, errorMessage);
                 worker.SkippedCount++;
-                terminalNode = CreateDirectoryNode(
-                    directory, [], 0, 0, 0, ScanNodeStatus.Error, errorMessage, frame.IsReparsePoint);
+                terminalNode = CreateDirectoryNode(directory, [], 0, 0, 0, ScanNodeStatus.Error);
                 return false;
             }
 
@@ -559,12 +547,11 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 "Directory target already visited; reparse-point cycle or duplicate target skipped.";
             AddIssue(worker, directory.FullName, ScanIssueKind.ReparsePointSkipped, duplicateMessage);
             worker.SkippedCount++;
-            terminalNode = CreateDirectoryNode(
-                directory, [], 0, 0, 0, ScanNodeStatus.Skipped, duplicateMessage, frame.IsReparsePoint);
+            terminalNode = CreateDirectoryNode(directory, [], 0, 0, 0, ScanNodeStatus.Skipped);
             return false;
         }
 
-        private bool TryMoveNextEntry(DirectoryFrame frame, out FileSystemInfo? item, WorkerState worker)
+        private static bool TryMoveNextEntry(DirectoryFrame frame, out FileSystemInfo? item, WorkerState worker)
         {
             item = null;
             if (frame.Enumerator is null)
@@ -592,7 +579,6 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 // Keep already-scanned children and mark this directory partial.
                 AddIssue(worker, frame.Directory.FullName, ToIssueKind(exception), exception.Message);
                 frame.Status = ScanNodeStatus.Partial;
-                frame.ErrorReason = exception.Message;
                 return false;
             }
         }
@@ -660,7 +646,6 @@ public sealed class FileSystemDiskScanner : IDiskScanner
         private static void MarkFrameCanceled(DirectoryFrame frame)
         {
             frame.Status = ScanNodeStatus.Partial;
-            frame.ErrorReason ??= "Scan canceled.";
         }
 
         private ScanNode CompleteDirectoryFrame(DirectoryFrame frame)
@@ -668,21 +653,8 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             frame.Enumerator?.Dispose();
             frame.Enumerator = null;
 
-            if (frame.Status == ScanNodeStatus.Partial && frame.ErrorReason is null)
-            {
-                frame.ErrorReason = "One or more child paths were skipped or could not be scanned.";
-            }
-
             var retainedChildren = CapChildren(frame.Directory.FullName, frame.Children);
-            return CreateDirectoryNode(
-                frame.Directory,
-                retainedChildren,
-                frame.SizeBytes,
-                frame.FileCount,
-                frame.DirectoryCount,
-                frame.Status,
-                frame.ErrorReason,
-                frame.IsReparsePoint);
+            return CreateDirectoryNode(frame.Directory, retainedChildren, frame.SizeBytes, frame.FileCount, frame.DirectoryCount, frame.Status);
         }
 
         private sealed class DirectoryFrame(DirectoryInfo directory, bool isRoot)
@@ -705,8 +677,6 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
             public ScanNodeStatus Status { get; set; } = ScanNodeStatus.Completed;
 
-            public string? ErrorReason { get; set; }
-
             public IEnumerator<FileSystemInfo>? Enumerator { get; set; }
 
             /// <summary>顶层扇出时指向子树状态，用于把实时占用写入渐进快照。</summary>
@@ -723,7 +693,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 return null;
             }
 
-            return CreateFileNode(file, accepted, includeModifiedAt: options.ReadFileTimestamps);
+            return CreateFileNode(file, accepted);
         }
 
         /// <summary>
@@ -790,13 +760,13 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             worker.TotalBytes += length;
 
             // Top-file heap keeps a lightweight node (no timestamps) in both scan modes.
-            ConsiderTopFile(worker, CreateFileNode(file, new AcceptedFile(length, isReparsePoint), includeModifiedAt: false));
+            ConsiderTopFile(worker, CreateFileNode(file, new AcceptedFile(length)));
             ReportProgress();
 
-            return new AcceptedFile(length, isReparsePoint);
+            return new AcceptedFile(length);
         }
 
-        private static ScanNode CreateFileNode(FileInfo file, AcceptedFile accepted, bool includeModifiedAt)
+        private static ScanNode CreateFileNode(FileInfo file, AcceptedFile accepted)
         {
             return new ScanNode(
                 file.Name,
@@ -805,17 +775,14 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 accepted.Length,
                 FileCount: 1,
                 DirectoryCount: 0,
-                Children: [],
-                Extension: file.Extension,
-                ModifiedAt: includeModifiedAt ? SafeGetTime(() => file.LastWriteTimeUtc) : null,
-                IsReparsePoint: accepted.IsReparsePoint);
+                Children: []);
         }
 
         // These three helpers run on whichever worker owns the directory, so they must
         // record the issue against that worker. WorkerState is single-threaded by
         // design: filing a fan-out worker's issue under _mainWorker would mutate a
         // List<ScanIssue> from several threads at once.
-        private IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(DirectoryInfo directory, WorkerState worker)
+        private static IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(DirectoryInfo directory, WorkerState worker)
         {
             try
             {
@@ -828,7 +795,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
         }
 
-        private bool TryGetAttributes(string path, WorkerState worker, out FileAttributes attributes)
+        private static bool TryGetAttributes(string path, WorkerState worker, out FileAttributes attributes)
         {
             try
             {
@@ -843,7 +810,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
         }
 
-        private bool TryGetAttributes(FileSystemInfo item, WorkerState worker, out FileAttributes attributes)
+        private static bool TryGetAttributes(FileSystemInfo item, WorkerState worker, out FileAttributes attributes)
         {
             try
             {
@@ -883,15 +850,13 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             return false;
         }
 
-        private ScanNode CreateDirectoryNode(
+        private static ScanNode CreateDirectoryNode(
             DirectoryInfo directory,
             IReadOnlyList<ScanNode> children,
             long sizeBytes,
             int fileCount,
             int directoryCount,
-            ScanNodeStatus status,
-            string? errorReason,
-            bool isReparsePoint)
+            ScanNodeStatus status)
         {
             return new ScanNode(
                 directory.Name.Length == 0 ? directory.FullName : directory.Name,
@@ -901,9 +866,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 fileCount,
                 directoryCount,
                 children,
-                Status: status,
-                ErrorReason: errorReason,
-                IsReparsePoint: isReparsePoint);
+                Status: status);
         }
 
         private List<ScanNode> CapChildren(string parentFullPath, List<ScanNode> children)
@@ -914,9 +877,11 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 return children;
             }
 
-            // Reserve one slot for the VirtualGroup aggregate.
+            // Reserve one slot for the VirtualGroup aggregate. max == 1 leaves no room
+            // for a real child next to the aggregate, so everything collapses into it.
+            // Math.Max(1, ...) here would keep one child and produce max + 1 entries.
             // Top-K via min-heap: O(n log k) instead of full O(n log n) sort.
-            var keepCount = Math.Max(1, max - 1);
+            var keepCount = max - 1;
             var heap = new PriorityQueue<ScanNode, long>(keepCount + 1);
             long restSize = 0;
             var restFiles = 0;
@@ -971,7 +936,6 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                     restDirs,
                     Children: [],
                     Status: ScanNodeStatus.Completed,
-                    ErrorReason: $"{restCount} smaller items aggregated (MaxChildrenPerDirectory={max}).",
                     AggregatedItemCount: restCount));
             }
 
@@ -1047,7 +1011,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
         }
 
-        private void AddIssue(WorkerState worker, string path, ScanIssueKind kind, string message)
+        private static void AddIssue(WorkerState worker, string path, ScanIssueKind kind, string message)
         {
             worker.IssueCount++;
             if (worker.Issues.Count >= MaxRetainedIssues)
@@ -1108,7 +1072,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
 
             var elapsedTicks = _elapsed.ElapsedTicks;
-            var minimumTicks = Stopwatch.Frequency / 2;
+            var minimumTicks = Stopwatch.Frequency * ProgressThrottleMilliseconds / 1000;
             var forceFirst = !_hasEmittedPartialRoot;
             if (!forceFirst && !TryClaim(ref _lastPartialRootTicks, elapsedTicks, minimumTicks))
             {
@@ -1118,15 +1082,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             _hasEmittedPartialRoot = true;
 
             // Copy only when actually reporting — children keep mutating while the scan runs.
-            var partialRoot = CreateDirectoryNode(
-                frame.Directory,
-                frame.Children.ToArray(),
-                frame.SizeBytes,
-                frame.FileCount,
-                frame.DirectoryCount,
-                ScanNodeStatus.Partial,
-                "Scan in progress.",
-                frame.IsReparsePoint);
+            var partialRoot = CreateDirectoryNode(frame.Directory, frame.Children.ToArray(), frame.SizeBytes, frame.FileCount, frame.DirectoryCount, ScanNodeStatus.Partial);
 
             var totals = GetTotals();
             progress.Report(new ScanProgress(
@@ -1148,7 +1104,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
 
             var elapsedTicks = _elapsed.ElapsedTicks;
-            var minimumTicks = Stopwatch.Frequency / 2;
+            var minimumTicks = Stopwatch.Frequency * ProgressThrottleMilliseconds / 1000;
             var forceFirst = !_hasEmittedPartialRoot;
             if (!forceFirst && !TryClaim(ref _lastPartialRootTicks, elapsedTicks, minimumTicks))
             {
@@ -1183,15 +1139,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
             children.AddRange(state.FileNodes);
 
-            var partialRoot = CreateDirectoryNode(
-                state.Directory,
-                children,
-                sizeBytes,
-                fileCount,
-                directoryCount,
-                ScanNodeStatus.Partial,
-                "Scan in progress.",
-                false);
+            var partialRoot = CreateDirectoryNode(state.Directory, children, sizeBytes, fileCount, directoryCount, ScanNodeStatus.Partial);
 
             var totals = GetTotals();
             progress.Report(new ScanProgress(
@@ -1218,9 +1166,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 subtree.LiveFiles,
                 subtree.LiveDirs,
                 Children: [],
-                Status: ScanNodeStatus.Partial,
-                ErrorReason: "Scan in progress.",
-                IsReparsePoint: false);
+                Status: ScanNodeStatus.Partial);
         }
 
         private void ReportProgress(bool force = false, ScanNode? partialRoot = null)
@@ -1231,7 +1177,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
 
             var elapsedTicks = _elapsed.ElapsedTicks;
-            var minimumTicks = Stopwatch.Frequency / 2;
+            var minimumTicks = Stopwatch.Frequency * ProgressThrottleMilliseconds / 1000;
             if (!force && !TryClaim(ref _lastProgressTicks, elapsedTicks, minimumTicks))
             {
                 return;
@@ -1283,18 +1229,6 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             return (files, directories, bytes, skipped, issues);
         }
 
-        private static DateTimeOffset? SafeGetTime(Func<DateTime> readTime)
-        {
-            try
-            {
-                return new DateTimeOffset(DateTime.SpecifyKind(readTime(), DateTimeKind.Utc));
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
         private static bool IsDriveRoot(string path)
         {
             var root = Path.GetPathRoot(path);
@@ -1327,7 +1261,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
         private readonly record struct FileStats(long SizeBytes, int FileCount);
 
-        private readonly record struct AcceptedFile(long Length, bool IsReparsePoint);
+        private readonly record struct AcceptedFile(long Length);
 
         private sealed class RootScanState(DirectoryInfo directory)
         {

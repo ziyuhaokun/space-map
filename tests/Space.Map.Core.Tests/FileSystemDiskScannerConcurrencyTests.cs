@@ -65,7 +65,6 @@ public class FileSystemDiskScannerConcurrencyTests : IDisposable
         var options = new ScanOptions(_testDirectory)
         {
             KeepFileNodes = false,
-            ReadFileTimestamps = false,
             MaxParallelism = SubtreeCount
         };
 
