@@ -249,8 +249,6 @@ public sealed class PieChartCanvas : FrameworkElement
                 new Point(anchor.X - sizeText.Width / 2, top + percentText.Height + 1));
             drawingContext.Pop();
         }
-
-        drawingContext.Pop();
     }
 
     /// <summary>
