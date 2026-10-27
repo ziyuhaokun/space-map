@@ -479,7 +479,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             worker.ScannedDirectories++;
             ReportProgress();
 
-            if (!TryGetAttributes(directory.FullName, out var attributes))
+            if (!TryGetAttributes(directory.FullName, worker, out var attributes))
             {
                 terminalNode = CreateDirectoryNode(
                     directory, [], 0, 0, 0, ScanNodeStatus.Error, "Unable to read directory attributes.", false);
@@ -517,7 +517,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
 
             frame.IsEntered = true;
-            frame.Enumerator = EnumerateFileSystemInfos(directory).GetEnumerator();
+            frame.Enumerator = EnumerateFileSystemInfos(directory, worker).GetEnumerator();
             return true;
         }
 
@@ -748,7 +748,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             cancellationToken.ThrowIfCancellationRequested();
             _currentPath = file.FullName;
 
-            if (!TryGetAttributes(file, out var attributes))
+            if (!TryGetAttributes(file, worker, out var attributes))
             {
                 return null;
             }
@@ -811,7 +811,11 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                 IsReparsePoint: accepted.IsReparsePoint);
         }
 
-        private IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(DirectoryInfo directory)
+        // These three helpers run on whichever worker owns the directory, so they must
+        // record the issue against that worker. WorkerState is single-threaded by
+        // design: filing a fan-out worker's issue under _mainWorker would mutate a
+        // List<ScanIssue> from several threads at once.
+        private IEnumerable<FileSystemInfo> EnumerateFileSystemInfos(DirectoryInfo directory, WorkerState worker)
         {
             try
             {
@@ -819,12 +823,12 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             }
             catch (Exception exception) when (IsRecoverableFileSystemException(exception))
             {
-                AddIssue(_mainWorker, directory.FullName, ToIssueKind(exception), exception.Message);
+                AddIssue(worker, directory.FullName, ToIssueKind(exception), exception.Message);
                 return [];
             }
         }
 
-        private bool TryGetAttributes(string path, out FileAttributes attributes)
+        private bool TryGetAttributes(string path, WorkerState worker, out FileAttributes attributes)
         {
             try
             {
@@ -834,12 +838,12 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             catch (Exception exception) when (IsRecoverableFileSystemException(exception))
             {
                 attributes = default;
-                AddIssue(_mainWorker, path, ToIssueKind(exception), exception.Message);
+                AddIssue(worker, path, ToIssueKind(exception), exception.Message);
                 return false;
             }
         }
 
-        private bool TryGetAttributes(FileSystemInfo item, out FileAttributes attributes)
+        private bool TryGetAttributes(FileSystemInfo item, WorkerState worker, out FileAttributes attributes)
         {
             try
             {
@@ -849,7 +853,7 @@ public sealed class FileSystemDiskScanner : IDiskScanner
             catch (Exception exception) when (IsRecoverableFileSystemException(exception))
             {
                 attributes = default;
-                AddIssue(_mainWorker, item.FullName, ToIssueKind(exception), exception.Message);
+                AddIssue(worker, item.FullName, ToIssueKind(exception), exception.Message);
                 return false;
             }
         }
