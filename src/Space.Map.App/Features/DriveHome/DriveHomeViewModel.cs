@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Space.Map.App.Services;
 using Space.Map.Core.Abstractions;
 using Space.Map.Infrastructure.Logging;
 using System.Collections.ObjectModel;
@@ -29,7 +30,20 @@ public partial class DriveHomeViewModel : ObservableObject
         _scan.PropertyChanged += OnScanPropertyChanged;
     }
 
+    private static ILocalizationService Loc => LocalizationService.Instance;
+
     public ObservableCollection<DriveEntry> Drives { get; } = [];
+
+    /// <summary>Re-enumerates drives so card labels pick up the new language.</summary>
+    public void RefreshLocalization()
+    {
+        if (_isHostDisposed())
+        {
+            return;
+        }
+
+        RefreshDrives();
+    }
 
     private void OnScanPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -52,7 +66,7 @@ public partial class DriveHomeViewModel : ObservableObject
 
         _showDriveHome();
         RefreshDrives();
-        _scan.SetStatus("选择磁盘开始扫描，或通过工具栏选择目录");
+        _scan.SetStatus(Loc.GetString("Status_SelectPath"));
         AppLog.Debug("Drive home shown.");
     }
 
@@ -76,13 +90,13 @@ public partial class DriveHomeViewModel : ObservableObject
 
             if (Drives.Count == 0)
             {
-                _scan.SetStatus("未发现可用磁盘");
+                _scan.SetStatus(Loc.GetString("Drive_NoDrives"));
             }
         }
         catch (Exception exception)
         {
             AppLog.Warning($"Failed to enumerate drives: {exception.Message}");
-            _scan.SetStatus("无法枚举磁盘");
+            _scan.SetStatus(Loc.GetString("Drive_EnumerateFailed"));
         }
     }
 
@@ -96,8 +110,8 @@ public partial class DriveHomeViewModel : ObservableObject
 
         _scan.SelectedPath = drive.RootPath;
         _scan.SetStatus(drive.IsReady
-            ? $"已选择 {drive.DisplayName}"
-            : $"磁盘未就绪：{drive.DisplayName}");
+            ? Loc.Format("Drive_Selected", drive.DisplayName)
+            : Loc.Format("Drive_NotReadyFormat", drive.DisplayName));
     }
 
     [RelayCommand(CanExecute = nameof(CanInteract))]
@@ -111,7 +125,7 @@ public partial class DriveHomeViewModel : ObservableObject
         _scan.SelectedPath = drive.RootPath;
         if (!_scan.StartScanCommand.CanExecute(null))
         {
-            _scan.SetStatus("无法扫描所选磁盘");
+            _scan.SetStatus(Loc.GetString("Drive_CannotScan"));
             return;
         }
 

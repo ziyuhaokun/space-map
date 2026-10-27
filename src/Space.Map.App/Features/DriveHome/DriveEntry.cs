@@ -1,3 +1,4 @@
+using Space.Map.App.Services;
 using Space.Map.Core.Abstractions;
 using Space.Map.Core.Formatting;
 
@@ -21,6 +22,9 @@ public sealed class DriveEntry
 
     public required string TotalSizeText { get; init; }
 
+    /// <summary>Localized "Total 1.0 TB" caption; StringFormat cannot take a DynamicResource.</summary>
+    public string TotalSizeDisplay => LocalizationService.Instance.Format("DriveHome_TotalFormat", TotalSizeText);
+
     public required string FreeSizeText { get; init; }
 
     public required string UsedSizeText { get; init; }
@@ -31,16 +35,18 @@ public sealed class DriveEntry
 
     public bool CanScan => IsReady;
 
-    public string StatusLabel => IsReady ? "就绪" : "未就绪";
+    public string StatusLabel => LocalizationService.Instance.GetString(
+        IsReady ? "DriveHome_Ready" : "DriveHome_NotReady");
 
     public static DriveEntry FromVolume(DriveVolume volume)
     {
         ArgumentNullException.ThrowIfNull(volume);
 
-        var typeLabel = FormatDriveCategory(volume.Category);
+        var loc = LocalizationService.Instance;
+        var typeLabel = loc.GetString($"DriveCategory_{volume.Category}");
         var displayName = string.IsNullOrWhiteSpace(volume.VolumeLabel)
-            ? $"{volume.Name} ({typeLabel})"
-            : $"{volume.VolumeLabel} ({volume.Name})";
+            ? loc.Format("DriveDisplay_NoLabel", volume.Name, typeLabel)
+            : loc.Format("DriveDisplay_WithLabel", volume.VolumeLabel, volume.Name);
 
         return new DriveEntry
         {
@@ -55,19 +61,6 @@ public sealed class DriveEntry
             UsedSizeText = volume.IsReady ? ByteSizeFormatter.Format(volume.UsedSizeBytes) : "—",
             UsedPercent = volume.UsedPercent,
             IsReady = volume.IsReady
-        };
-    }
-
-    private static string FormatDriveCategory(DriveCategory category)
-    {
-        return category switch
-        {
-            DriveCategory.Fixed => "本地磁盘",
-            DriveCategory.Removable => "可移动",
-            DriveCategory.Network => "网络",
-            DriveCategory.CdRom => "光盘",
-            DriveCategory.Ram => "内存盘",
-            _ => "未知"
         };
     }
 }

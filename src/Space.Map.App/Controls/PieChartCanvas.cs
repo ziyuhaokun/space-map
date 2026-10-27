@@ -2,6 +2,7 @@ using System.Collections;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Space.Map.App.Services;
 using Space.Map.App.ViewModels;
 using Space.Map.Core.Formatting;
 
@@ -9,6 +10,8 @@ namespace Space.Map.App.Controls;
 
 public sealed class PieChartCanvas : FrameworkElement
 {
+    private static ILocalizationService Loc => LocalizationService.Instance;
+
     private const double InnerRadiusRatio = 0.62;
     private const double SliceGapDegrees = 1.0;
     private const double HoverExplodeDistance = 6;
@@ -56,7 +59,25 @@ public sealed class PieChartCanvas : FrameworkElement
     {
         Cursor = Cursors.Hand;
         ClipToBounds = true;
+
+        // Labels are drawn from C#, not DynamicResource, so a language switch
+        // needs an explicit repaint.
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        InvalidateVisual();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => InvalidateVisual();
 
     public IEnumerable? ItemsSource
     {
@@ -175,7 +196,7 @@ public sealed class PieChartCanvas : FrameworkElement
         ToolTip = newHover is { } item
             ? $"{item.Name}\n{item.Size} · {item.PercentOfRoot}\n{item.FullPath}"
             : slice?.ColorIndex == -1
-                ? "其他\n未进入 Top 10 的剩余空间"
+                ? $"{Loc.GetString("Chart_OtherSlice")}\n{Loc.GetString("Chart_OtherSliceHint")}"
                 : null;
     }
 
@@ -229,7 +250,7 @@ public sealed class PieChartCanvas : FrameworkElement
 
         DrawCenterText(
             drawingContext,
-            "总占用",
+            Loc.GetString("Chart_TotalUsage"),
             ByteSizeFormatter.Format(TotalSizeBytes),
             null);
     }
@@ -297,7 +318,7 @@ public sealed class PieChartCanvas : FrameworkElement
 
         var maxWidth = Math.Max(48, (_innerRadius - 18) * 2);
         var text = new FormattedText(
-            "扫描完成后，这里会显示各目录占比。",
+            Loc.GetString("Chart_EmptyState"),
             Thread.CurrentThread.CurrentCulture,
             FlowDirection.LeftToRight,
             SubLabelTypeface,

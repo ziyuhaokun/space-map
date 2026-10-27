@@ -90,7 +90,7 @@ public partial class App : Application
     {
         var logPath = AppLog.CurrentLogFile ?? AppLog.LogDirectory;
         MessageBox.Show(
-            $"程序遇到未处理异常，已写入日志。\n\n{exception.Message}\n\n日志位置：{logPath}",
+            LocalizationService.Instance.Format("Dialog_FatalError", exception.Message, logPath),
             "Space.Map",
             MessageBoxButton.OK,
             MessageBoxImage.Error);

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Space.Map.App.Messages;
+using Space.Map.App.Services;
 using Space.Map.Core.Abstractions;
 using Space.Map.Core.Navigation;
 using Space.Map.Core.Scanning;
@@ -138,11 +139,11 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
         if (_shellActions.TryOpenInExplorer(path))
         {
-            WeakReferenceMessenger.Default.Send(new StatusChangedMessage("已在资源管理器中打开"));
+            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_OpenedInExplorer")));
             return;
         }
 
-        WeakReferenceMessenger.Default.Send(new StatusChangedMessage("无法打开路径"));
+        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_OpenFailed")));
         AppLog.Warning($"Open in explorer failed: {path}");
     }
 
@@ -157,11 +158,11 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
         if (_shellActions.TryCopyPath(path))
         {
-            WeakReferenceMessenger.Default.Send(new StatusChangedMessage("路径已复制到剪贴板"));
+            WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_PathCopied")));
             return;
         }
 
-        WeakReferenceMessenger.Default.Send(new StatusChangedMessage("复制路径失败"));
+        WeakReferenceMessenger.Default.Send(new StatusChangedMessage(LocalizationService.Instance.GetString("Action_CopyFailed")));
         AppLog.Warning($"Copy path failed: {path}");
     }
 
@@ -198,6 +199,32 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
     public void ApplyResultRoot(ScanNode root)
     {
         _session.SetRoot(root);
+    }
+
+    /// <summary>
+    /// Rebuilds the projections after a language switch: node type labels and the
+    /// virtual-group name are captured when a summary is constructed.
+    /// </summary>
+    public void RefreshLocalization()
+    {
+        var currentNode = _session.CurrentNode;
+        if (currentNode is null)
+        {
+            return;
+        }
+
+        var previousSelection = SelectedNode?.Node;
+        RebuildProjections();
+
+        if (previousSelection is not null)
+        {
+            var restored = LevelItems.FirstOrDefault(item => ReferenceEquals(item.Node, previousSelection));
+            if (restored is not null)
+            {
+                SelectedNode = restored;
+                SelectedTreemapNode = restored.Node;
+            }
+        }
     }
 
     private void RebuildProjections()

@@ -85,7 +85,7 @@
                     <ui:SymbolIcon Foreground="#FF66A6FF"
                                    Symbol="DataPie24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
-                               Text="总大小" />
+                               Text="{DynamicResource Status_TotalSize}" />
                     <TextBlock Style="{StaticResource StatusValueStyle}"
                                Text="{Binding Scan.TotalSize}" />
                 </StackPanel>
@@ -100,7 +100,7 @@
                     <ui:SymbolIcon Foreground="{StaticResource ShellGreenBrush}"
                                    Symbol="Database24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
-                               Text="已统计" />
+                               Text="{DynamicResource Status_Scanned}" />
                     <TextBlock Style="{StaticResource StatusValueStyle}"
                                Text="{Binding Scan.ScannedBytes}" />
                 </StackPanel>
@@ -115,7 +115,7 @@
                     <ui:SymbolIcon Foreground="{StaticResource ShellPurpleBrush}"
                                    Symbol="Document24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
-                               Text="文件" />
+                               Text="{DynamicResource Status_Files}" />
                     <TextBlock Style="{StaticResource StatusValueStyle}"
                                Text="{Binding Scan.ScannedFiles}" />
                 </StackPanel>
@@ -130,7 +130,7 @@
                     <ui:SymbolIcon Foreground="{StaticResource ShellYellowBrush}"
                                    Symbol="Folder24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
-                               Text="目录" />
+                               Text="{DynamicResource Status_Directories}" />
                     <TextBlock Style="{StaticResource StatusValueStyle}"
                                Text="{Binding Scan.ScannedDirectories}" />
                 </StackPanel>
@@ -145,7 +145,7 @@
                     <ui:SymbolIcon Foreground="{StaticResource ShellWarningBrush}"
                                    Symbol="Warning24" />
                     <TextBlock Style="{StaticResource StatusLabelStyle}"
-                               Text="问题" />
+                               Text="{DynamicResource Status_Issues}" />
                     <TextBlock Style="{StaticResource StatusValueStyle}"
                                Text="{Binding Scan.IssueCount}" />
                 </StackPanel>

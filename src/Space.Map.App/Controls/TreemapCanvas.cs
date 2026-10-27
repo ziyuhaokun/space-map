@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Space.Map.App.Services;
 using Space.Map.Core.Formatting;
 using Space.Map.Core.Layout;
 using Space.Map.Core.Scanning;
@@ -9,6 +10,8 @@ namespace Space.Map.App.Controls;
 
 public sealed class TreemapCanvas : FrameworkElement
 {
+    private static ILocalizationService Loc => LocalizationService.Instance;
+
     private const int MaxTiles = 64;
     private const double LayoutSizeEpsilon = 0.5;
 
@@ -47,7 +50,24 @@ public sealed class TreemapCanvas : FrameworkElement
     public TreemapCanvas()
     {
         Cursor = Cursors.Hand;
+
+        // Empty-state text is drawn from C#, so a language switch needs a repaint.
+        Loaded += OnLoaded;
+        Unloaded += OnUnloaded;
     }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+        InvalidateVisual();
+    }
+
+    private void OnUnloaded(object sender, RoutedEventArgs e)
+    {
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged(object? sender, EventArgs e) => InvalidateVisual();
 
     public ScanNode? Root
     {
@@ -99,7 +119,7 @@ public sealed class TreemapCanvas : FrameworkElement
         var tile = HitTestTile(e.GetPosition(this));
         ToolTip = tile is null
             ? null
-            : $"{tile.Node.Name}\n{ByteSizeFormatter.Format(tile.Node.SizeBytes)}\n{tile.Node.FullPath}";
+            : $"{GetDisplayName(tile.Node)}\n{ByteSizeFormatter.Format(tile.Node.SizeBytes)}\n{tile.Node.FullPath}";
     }
 
     protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e)
@@ -215,9 +235,10 @@ public sealed class TreemapCanvas : FrameworkElement
             return;
         }
 
+        var displayName = GetDisplayName(tile.Node);
         var label = bounds.Height >= 52
-            ? $"{tile.Node.Name}\n{ByteSizeFormatter.Format(tile.Node.SizeBytes)}"
-            : tile.Node.Name;
+            ? $"{displayName}\n{ByteSizeFormatter.Format(tile.Node.SizeBytes)}"
+            : displayName;
 
         DrawText(drawingContext, label, Deflate(bounds, 14), bounds.Width - 28, 14);
     }
@@ -226,7 +247,7 @@ public sealed class TreemapCanvas : FrameworkElement
     {
         DrawText(
             drawingContext,
-            "选择目录并开始扫描后，这里会按占用比例显示文件夹画布。\n点击目录块可下钻查看子目录。",
+            Loc.GetString("Treemap_EmptyState"),
             Deflate(bounds, 24),
             Math.Max(0, bounds.Width - 48),
             14);
@@ -255,6 +276,17 @@ public sealed class TreemapCanvas : FrameworkElement
         };
 
         drawingContext.DrawText(formattedText, bounds.TopLeft);
+    }
+
+    /// <summary>
+    /// Virtual groups carry a language-neutral placeholder from the scanner; render
+    /// the localized aggregate label instead.
+    /// </summary>
+    private static string GetDisplayName(ScanNode node)
+    {
+        return node.NodeType == ScanNodeType.VirtualGroup
+            ? Loc.Format("NodeType_OtherFormat", node.AggregatedItemCount)
+            : node.Name;
     }
 
     private TreemapTile? HitTestTile(Point point)

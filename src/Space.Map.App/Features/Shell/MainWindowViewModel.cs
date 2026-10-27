@@ -41,8 +41,40 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
             showDriveHome: () => IsDriveHomeVisible = true,
             isHostDisposed: () => _isDisposed);
 
+        UpdateLanguageButtonLabel();
         UpdateThemeToggleState();
         DriveHome.RefreshDrivesCommand.Execute(null);
+
+        LocalizationService.Instance.LanguageChanged += OnLanguageChanged;
+    }
+
+    private static ILocalizationService Loc => LocalizationService.Instance;
+
+    /// <summary>
+    /// Everything the shell renders from C# (status text, node/issue labels, drive
+    /// cards, chart captions) is captured when built, so a language switch has to
+    /// rebuild it explicitly. DynamicResource-bound XAML updates on its own.
+    /// </summary>
+    private void OnLanguageChanged(object? sender, EventArgs e)
+    {
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        UpdateLanguageButtonLabel();
+        UpdateThemeToggleState();
+
+        Scan.RefreshLocalization();
+        Navigation.RefreshLocalization();
+        DriveHome.RefreshLocalization();
+    }
+
+    private void UpdateLanguageButtonLabel()
+    {
+        // Label shows the language you would switch TO, not the current one.
+        LanguageButtonLabel = Loc.GetString(
+            Loc.CurrentLanguage == "zh-CN" ? "TitleBar_LanguageToEnglish" : "TitleBar_LanguageToChinese");
     }
 
     public ScanSessionViewModel Scan { get; }
@@ -52,10 +84,10 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     public DriveHomeViewModel DriveHome { get; }
 
     [ObservableProperty]
-    private string _languageButtonLabel = "中/EN";
+    private string _languageButtonLabel = string.Empty;
 
     [ObservableProperty]
-    private string _themeToggleToolTip = "切换到深色模式";
+    private string _themeToggleToolTip = string.Empty;
 
     [ObservableProperty]
     private bool _isDarkTheme;
@@ -93,9 +125,9 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleLanguage()
     {
-        var next = LocalizationService.Instance.ToggleLanguage();
-        LanguageButtonLabel = next == "zh-CN" ? "EN" : "中";
-        UpdateThemeToggleState();
+        // SetLanguage raises LanguageChanged, which drives UpdateLanguageButtonLabel
+        // and the per-view-model rebuilds.
+        LocalizationService.Instance.ToggleLanguage();
     }
 
     [RelayCommand]
@@ -137,9 +169,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
 
         var isDark = _themeService.IsDarkTheme;
         IsDarkTheme = isDark;
-        ThemeToggleToolTip = isDark
-            ? LocalizationService.Instance.GetString("TitleBar_Theme_Light")
-            : LocalizationService.Instance.GetString("TitleBar_Theme_Dark");
+        ThemeToggleToolTip = Loc.GetString(isDark ? "TitleBar_Theme_Light" : "TitleBar_Theme_Dark");
     }
 
     public void Dispose()
@@ -150,6 +180,7 @@ public partial class MainWindowViewModel : ObservableObject, IDisposable
         }
 
         _isDisposed = true;
+        LocalizationService.Instance.LanguageChanged -= OnLanguageChanged;
         Scan.Dispose();
         AppLog.Information("MainWindowViewModel disposed.");
     }

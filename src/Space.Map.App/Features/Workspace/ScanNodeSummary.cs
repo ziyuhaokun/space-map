@@ -1,3 +1,4 @@
+using Space.Map.App.Services;
 using Space.Map.Core.Formatting;
 using Space.Map.Core.Scanning;
 
@@ -11,11 +12,11 @@ public sealed class ScanNodeSummary(ScanNode node, long rootSizeBytes, int color
 
     public int Rank { get; } = colorIndex + 1;
 
-    public string Name { get; } = node.Name;
+    public string Name { get; } = ResolveName(node);
 
     public string FullPath { get; } = node.FullPath;
 
-    public string Type { get; } = FormatNodeType(node.NodeType);
+    public string Type { get; } = LocalizationService.Instance.GetString($"NodeType_{node.NodeType}");
 
     public long SizeBytes { get; } = node.SizeBytes;
 
@@ -33,15 +34,17 @@ public sealed class ScanNodeSummary(ScanNode node, long rootSizeBytes, int color
 
     public int DirectoryCount { get; } = node.DirectoryCount;
 
-    private static string FormatNodeType(ScanNodeType nodeType)
+    /// <summary>
+    /// Virtual groups carry a language-neutral "#others" placeholder name from the
+    /// scanner; render the localized aggregate label instead.
+    /// </summary>
+    private static string ResolveName(ScanNode node)
     {
-        return nodeType switch
+        if (node.NodeType == ScanNodeType.VirtualGroup)
         {
-            ScanNodeType.Drive => "磁盘",
-            ScanNodeType.Directory => "目录",
-            ScanNodeType.File => "文件",
-            ScanNodeType.VirtualGroup => "分组",
-            _ => nodeType.ToString()
-        };
+            return LocalizationService.Instance.Format("NodeType_OtherFormat", node.AggregatedItemCount);
+        }
+
+        return node.Name;
     }
 }

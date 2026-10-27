@@ -119,7 +119,7 @@
                                                VerticalAlignment="Center"
                                                FontSize="11"
                                                Foreground="{DynamicResource TextFillColorSecondaryBrush}"
-                                               Text="{Binding TotalSizeText, StringFormat=共 {0}}" />
+                                               Text="{Binding TotalSizeDisplay}" />
                                 </Grid>
 
                                 <StackPanel Grid.Row="4"

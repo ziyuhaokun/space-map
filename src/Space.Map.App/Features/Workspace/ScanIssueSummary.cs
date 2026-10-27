@@ -1,3 +1,4 @@
+using Space.Map.App.Services;
 using Space.Map.Core.Scanning;
 
 namespace Space.Map.App.ViewModels;
@@ -6,24 +7,26 @@ public sealed class ScanIssueSummary(ScanIssue issue)
 {
     public string Kind { get; } = issue.Kind.ToString();
 
-    public string KindLabel { get; } = FormatKind(issue.Kind);
+    public string KindLabel { get; } = LocalizationService.Instance.GetString($"IssueKind_{issue.Kind}");
 
     public string Path { get; } = issue.Path;
 
-    public string Message { get; } = issue.Message;
+    public string Message { get; } = ResolveMessage(issue);
 
-    private static string FormatKind(ScanIssueKind kind)
+    /// <summary>
+    /// The scanner reports a machine-readable <see cref="ScanIssueKind"/> plus the raw
+    /// OS message. Prefer a localized sentence so the panel is readable in both
+    /// languages; fall back to the raw message when there is no matching resource.
+    /// </summary>
+    private static string ResolveMessage(ScanIssue issue)
     {
-        return kind switch
+        var key = $"ScanIssue_Message_{issue.Kind}";
+        var localized = LocalizationService.Instance.GetString(key);
+        if (!string.Equals(localized, key, StringComparison.Ordinal))
         {
-            ScanIssueKind.UnauthorizedAccess => "权限不足",
-            ScanIssueKind.PathTooLong => "路径过长",
-            ScanIssueKind.PathNotFound => "路径不存在",
-            ScanIssueKind.Io => "IO 错误",
-            ScanIssueKind.ReparsePointSkipped => "跳过重解析点",
-            ScanIssueKind.HiddenSkipped => "跳过隐藏项",
-            ScanIssueKind.SystemSkipped => "跳过系统项",
-            _ => "未知问题"
-        };
+            return localized;
+        }
+
+        return string.IsNullOrWhiteSpace(issue.Message) ? string.Empty : issue.Message;
     }
 }
