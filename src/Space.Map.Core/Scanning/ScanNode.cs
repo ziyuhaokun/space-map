@@ -12,4 +12,5 @@ public sealed record ScanNode(
     DateTimeOffset? ModifiedAt = null,
     ScanNodeStatus Status = ScanNodeStatus.Completed,
     string? ErrorReason = null,
-    bool IsReparsePoint = false);
+    bool IsReparsePoint = false,
+    int AggregatedItemCount = 0);

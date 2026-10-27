@@ -5,7 +5,7 @@ namespace Space.Map.Infrastructure.Platform;
 
 public sealed class WindowsFolderPicker : IFolderPicker
 {
-    public string? PickFolder(string? initialDirectory)
+    public string? PickFolder(string? initialDirectory, string? title = null)
     {
         var fallbackDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         // Prefer provided path without sync Exists (network paths can stall the UI thread).
@@ -15,7 +15,9 @@ public sealed class WindowsFolderPicker : IFolderPicker
 
         var dialog = new OpenFolderDialog
         {
-            Title = "选择要扫描的目录",
+            // Infrastructure has no access to the App's resource dictionaries, so the
+            // caller-supplied title keeps this layer free of user-facing strings.
+            Title = title ?? "Select folder",
             InitialDirectory = startDirectory,
             Multiselect = false
         };

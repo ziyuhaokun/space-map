@@ -956,8 +956,10 @@ public sealed class FileSystemDiskScanner : IDiskScanner
 
             if (restCount > 0)
             {
+                // Name is a language-neutral placeholder; the UI formats the display
+                // name from NodeType.VirtualGroup + AggregatedItemCount.
                 kept.Add(new ScanNode(
-                    $"其他 ({restCount})",
+                    "#others",
                     Path.Combine(parentFullPath, "#others"),
                     ScanNodeType.VirtualGroup,
                     restSize,
@@ -965,7 +967,8 @@ public sealed class FileSystemDiskScanner : IDiskScanner
                     restDirs,
                     Children: [],
                     Status: ScanNodeStatus.Completed,
-                    ErrorReason: $"{restCount} smaller items aggregated (MaxChildrenPerDirectory={max})."));
+                    ErrorReason: $"{restCount} smaller items aggregated (MaxChildrenPerDirectory={max}).",
+                    AggregatedItemCount: restCount));
             }
 
             // Dropped nodes are no longer referenced and can be collected.
