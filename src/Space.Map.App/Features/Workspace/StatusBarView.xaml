@@ -5,7 +5,25 @@
     <Border Background="{DynamicResource CardBackgroundFillColorDefaultBrush}"
             BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
             BorderThickness="1">
-        <ScrollViewer HorizontalScrollBarVisibility="Disabled"
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!--
+              Indeterminate: total size is not known until the scan finishes, so a
+              percentage would be a lie. It still answers "is it working?".
+            -->
+            <ProgressBar Grid.Row="1"
+                         Height="3"
+                         Margin="0"
+                         BorderThickness="0"
+                         IsIndeterminate="{Binding Scan.IsScanning}"
+                         Visibility="{Binding Scan.IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}" />
+
+        <ScrollViewer Grid.Row="0"
+                      HorizontalScrollBarVisibility="Disabled"
                       VerticalScrollBarVisibility="Disabled">
             <Grid Margin="20,0">
                 <Grid.ColumnDefinitions>
@@ -151,5 +169,6 @@
                 </StackPanel>
             </Grid>
         </ScrollViewer>
+        </Grid>
     </Border>
 </UserControl>

@@ -10,6 +10,7 @@
         </Grid.RowDefinitions>
 
         <controls:TreemapCanvas Grid.Row="0"
+                                IsScanning="{Binding Scan.IsScanning}"
                                 NodeActivatedCommand="{Binding Navigation.ActivateTreemapNodeCommand}"
                                 Root="{Binding Navigation.CurrentTreemapNode}"
                                 SelectedNode="{Binding Navigation.SelectedTreemapNode, Mode=TwoWay}"

@@ -46,6 +46,25 @@ public sealed class TreeNavigationSession : ITreeNavigationSession
         Navigated?.Invoke(this, EventArgs.Empty);
     }
 
+    public bool UpdatePartialRoot(ScanNode partialRoot)
+    {
+        ArgumentNullException.ThrowIfNull(partialRoot);
+
+        _root = partialRoot;
+
+        // Only follow the live snapshot while the user is still looking at the
+        // root. Deeper levels are rebuilt when the scan finishes.
+        if (_stack.Count > 1)
+        {
+            return false;
+        }
+
+        _stack.Clear();
+        _stack.Add(partialRoot);
+        Navigated?.Invoke(this, EventArgs.Empty);
+        return true;
+    }
+
     public bool DrillDown(ScanNode node)
     {
         ArgumentNullException.ThrowIfNull(node);

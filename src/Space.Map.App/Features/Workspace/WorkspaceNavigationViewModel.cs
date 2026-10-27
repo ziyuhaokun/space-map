@@ -275,7 +275,12 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
         if (_session.RootNode is null)
         {
             _session.SetRoot(partialRoot);
+            return;
         }
+
+        // Follow the live snapshot so the map grows while the scan runs instead of
+        // freezing on whatever the first report happened to contain.
+        _session.UpdatePartialRoot(partialRoot);
     }
 
     public void ApplyResultRoot(ScanNode root)
@@ -293,6 +298,11 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
 
     private void RebuildProjections()
     {
+        // Keep whatever the user picked across a rebuild: during a scan this runs
+        // every progress tick, and re-selecting the first row each time would fight
+        // the user's clicks.
+        var previousSelection = SelectedNode?.Node.FullPath;
+
         LevelItems.DetachAndClear();
         ChartTopItems.DetachAndClear();
         Breadcrumbs.Clear();
@@ -330,7 +340,14 @@ public partial class WorkspaceNavigationViewModel : ObservableObject
             Breadcrumbs.Add(new BreadcrumbItem(item.Name, i, isLast: i == rawBreadcrumbs.Count - 1));
         }
 
-        SelectedNode = LevelItems.FirstOrDefault();
+        // Restore the previous pick when it is still in this level, otherwise fall
+        // back to the largest entry.
+        var restored = previousSelection is null
+            ? null
+            : LevelItems.FirstOrDefault(item =>
+                string.Equals(item.FullPath, previousSelection, StringComparison.OrdinalIgnoreCase));
+
+        SelectedNode = restored ?? LevelItems.FirstOrDefault();
         SelectedTreemapNode = SelectedNode?.Node;
     }
 

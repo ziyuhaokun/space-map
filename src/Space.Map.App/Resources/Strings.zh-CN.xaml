@@ -126,6 +126,7 @@
     <system:String x:Key="Chart_OtherSliceHint">未进入 Top 10 的剩余空间</system:String>
     <system:String x:Key="Treemap_EmptyState">选择目录并开始扫描后，这里会按占用比例显示文件夹画布。
 点击目录块可下钻查看子目录。</system:String>
+    <system:String x:Key="Treemap_MeasuringState">正在扫描…测量完成后画布会逐步填充。</system:String>
 
     <system:String x:Key="Action_OpenedInExplorer">已在资源管理器中打开</system:String>
     <system:String x:Key="Action_OpenFailed">无法打开路径</system:String>

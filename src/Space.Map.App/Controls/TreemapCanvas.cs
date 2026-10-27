@@ -35,6 +35,12 @@ public sealed class TreemapCanvas : FrameworkElement
         typeof(TreemapCanvas),
         new PropertyMetadata(null));
 
+    public static readonly DependencyProperty IsScanningProperty = DependencyProperty.Register(
+        nameof(IsScanning),
+        typeof(bool),
+        typeof(TreemapCanvas),
+        new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
     private static readonly Typeface LabelTypeface = new("Segoe UI");
     private static readonly Brush BackgroundBrush = CreateFrozenBrush(Color.FromArgb(0x40, 0x0D, 0x18, 0x27));
     private static readonly Pen BackgroundBorderPen = CreateFrozenPen(Color.FromArgb(0x55, 0x4F, 0x66, 0x80), 1);
@@ -89,6 +95,13 @@ public sealed class TreemapCanvas : FrameworkElement
     {
         get => (ICommand?)GetValue(NodeActivatedCommandProperty);
         set => SetValue(NodeActivatedCommandProperty, value);
+    }
+
+    /// <summary>Drives the empty-state wording: "measuring" while a scan runs.</summary>
+    public bool IsScanning
+    {
+        get => (bool)GetValue(IsScanningProperty);
+        set => SetValue(IsScanningProperty, value);
     }
 
     protected override void OnRender(DrawingContext drawingContext)
@@ -203,9 +216,19 @@ public sealed class TreemapCanvas : FrameworkElement
         }
 
         var children = parent.Children;
-        if (children.Count == 0 || children.All(static node => node.SizeBytes <= 0))
+        if (children.Count == 0)
         {
+            // A leaf (or a directory with nothing measurable yet): one tile is right.
             AddTile(parent, bounds, paletteOffset: 0);
+            return;
+        }
+
+        if (children.All(static node => node.SizeBytes <= 0))
+        {
+            // A mid-scan snapshot can list children before any of them is measured.
+            // Drawing the parent as one solid tile then shows a meaningless block,
+            // so render the "still measuring" state instead.
+            _layoutIsEmptyState = true;
             return;
         }
 
@@ -260,7 +283,7 @@ public sealed class TreemapCanvas : FrameworkElement
     {
         DrawText(
             drawingContext,
-            Loc.GetString("Treemap_EmptyState"),
+            Loc.GetString(IsScanning ? "Treemap_MeasuringState" : "Treemap_EmptyState"),
             Deflate(bounds, 24),
             Math.Max(0, bounds.Width - 48),
             14);

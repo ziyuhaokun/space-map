@@ -126,6 +126,7 @@
     <system:String x:Key="Chart_OtherSliceHint">Remaining space outside the top 10</system:String>
     <system:String x:Key="Treemap_EmptyState">Choose a folder and start a scan to see a size-proportional map here.
 Click a block to drill into its subfolders.</system:String>
+    <system:String x:Key="Treemap_MeasuringState">Scanning… the map fills in as folders are measured.</system:String>
 
     <system:String x:Key="Action_OpenedInExplorer">Opened in Explorer</system:String>
     <system:String x:Key="Action_OpenFailed">Cannot open the path</system:String>

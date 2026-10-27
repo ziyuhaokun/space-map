@@ -16,6 +16,13 @@ public interface ITreeNavigationSession
 
     void SetRoot(ScanNode? root);
 
+    /// <summary>
+    /// Replaces the root with a newer snapshot while a scan is still running.
+    /// Does nothing once the user has drilled below the root, so a live refresh
+    /// cannot yank them out of the level they are looking at.
+    /// </summary>
+    bool UpdatePartialRoot(ScanNode partialRoot);
+
     bool DrillDown(ScanNode node);
 
     bool NavigateUp();
