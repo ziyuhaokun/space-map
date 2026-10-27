@@ -23,8 +23,23 @@ jobs:
         dotnet-version: 10.0.x
 
     - name: Publish App
+      # Self-contained single file: the release asset is one runnable .exe.
+      # --self-contained false only emits a ~200 KB apphost, which cannot start
+      # without the managed dll and deps.json, so it must not be shipped alone.
       run: |
-        dotnet publish src/Space.Map.App/Space.Map.App.csproj -c Release -r win-x64 --self-contained false -p:PublishSingleFile=false -o publish
+        dotnet publish src/Space.Map.App/Space.Map.App.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o publish
+
+    - name: Verify Release Artifact
+      # Guards against silently publishing an incomplete package again.
+      shell: pwsh
+      run: |
+        $files = Get-ChildItem publish -File
+        if ($files.Count -ne 1 -or $files[0].Name -ne 'Space.Map.exe') {
+          throw "Expected a single Space.Map.exe, found: $($files.Name -join ', ')"
+        }
+        if ($files[0].Length -lt 10MB) {
+          throw "Space.Map.exe is only $([math]::Round($files[0].Length / 1MB, 1)) MB - likely a framework-dependent apphost, not a self-contained build."
+        }
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
