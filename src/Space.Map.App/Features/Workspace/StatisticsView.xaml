@@ -71,19 +71,28 @@
         <Grid Grid.Row="1"
               Margin="0,10,0,0">
             <Grid.RowDefinitions>
+                <!-- The donut is sized by the smaller of width and height, so the
+                     chart row has to be tall enough to matter: at the previous
+                     half-and-half split it only got ~180px and the pie came out at
+                     a 58px radius, lost in the middle of a wide empty row. -->
+                <RowDefinition Height="380" />
                 <RowDefinition Height="*"
-                               MinHeight="160" />
-                <RowDefinition Height="*"
-                               MinHeight="160" />
+                               MinHeight="140" />
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.35*" />
-                    <ColumnDefinition Width="340" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <Border Padding="8"
+                <!-- Square, not stretched: the pie radius comes from the smaller
+                     dimension, so a wide box would just leave the disc floating in
+                     empty space again. -->
+                <Border Width="380"
+                        Height="380"
+                        Padding="8"
+                        HorizontalAlignment="Left"
                         Background="{DynamicResource ControlFillColorSecondaryBrush}"
                         BorderBrush="{DynamicResource ControlStrokeColorDefaultBrush}"
                         BorderThickness="1"

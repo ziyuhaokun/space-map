@@ -12,11 +12,15 @@ public sealed class PieChartCanvas : FrameworkElement
 {
     private static ILocalizationService Loc => LocalizationService.Instance;
 
-    private const double InnerRadiusRatio = 0.62;
-    private const double SliceGapDegrees = 1.0;
+    /// <summary>Below this share a slice is too thin to carry a readable label.</summary>
+    private const double MinLabelPercent = 11.0;
+
+    /// <summary>Where labels sit, as a fraction of the outer radius.</summary>
+    private const double LabelRadiusRatio = 0.60;
+
     private const double HoverExplodeDistance = 6;
-    private const double ChartPadding = 32;
-    private const double InactiveSliceOpacity = 0.42;
+    private const double ChartPadding = 24;
+    private const double ShadowOffsetY = 2;
 
     public static readonly DependencyProperty ItemsSourceProperty = DependencyProperty.Register(
         nameof(ItemsSource),
@@ -37,24 +41,31 @@ public sealed class PieChartCanvas : FrameworkElement
         new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender | FrameworkPropertyMetadataOptions.BindsTwoWayByDefault));
 
     private static readonly Typeface LabelTypeface = new("Segoe UI Semibold");
+    private static readonly Typeface BoldLabelTypeface = new(
+        new FontFamily("Segoe UI"),
+        FontStyles.Normal,
+        FontWeights.Bold,
+        FontStretches.Normal);
     private static readonly Typeface SubLabelTypeface = new("Segoe UI");
-    private static readonly SolidColorBrush CenterBackgroundBrush = CreateFrozenBrush(Color.FromArgb(0xE6, 0x14, 0x1C, 0x28));
-    private static readonly SolidColorBrush CenterBorderBrush = CreateFrozenBrush(Color.FromArgb(0x44, 0x4F, 0x66, 0x80));
-    private static readonly SolidColorBrush TrackBrush = CreateFrozenBrush(Color.FromArgb(0x28, 0x4F, 0x66, 0x80));
-    private static readonly SolidColorBrush CenterTitleBrush = CreateFrozenBrush(Color.FromRgb(0xE8, 0xEE, 0xF8));
-    private static readonly SolidColorBrush CenterValueBrush = CreateFrozenBrush(Color.FromRgb(0x66, 0xA6, 0xFF));
-    private static readonly SolidColorBrush CenterSubtitleBrush = CreateFrozenBrush(Color.FromRgb(0x9A, 0xA8, 0xBC));
-    private static readonly SolidColorBrush EmptyStateBrush = CreateFrozenBrush(Color.FromArgb(0xCC, 0xA8, 0xB4, 0xC7));
-    private static readonly Pen CenterHubPen = CreateFrozenPen(Color.FromArgb(0x44, 0x4F, 0x66, 0x80), 0.5);
-    private static readonly Pen SliceSeparatorPen = CreateFrozenPen(Color.FromArgb(0x99, 0x0D, 0x18, 0x27), 0.5);
-    private static readonly Pen SelectedSlicePen = CreateFrozenPen(Color.FromArgb(0xFF, 0x66, 0xA6, 0xFF), 1.5);
+
+    private static readonly SolidColorBrush EmptyStateBrush = CreateFrozenBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
+    private static readonly SolidColorBrush SliceLabelBrush = Brushes.White;
+    private static readonly SolidColorBrush DarkSliceLabelBrush = CreateFrozenBrush(Color.FromRgb(0x1F, 0x29, 0x37));
+    private static readonly SolidColorBrush ShadowBrush = CreateFrozenBrush(Color.FromArgb(0x0F, 0x0F, 0x17, 0x2A));
+
+    /// <summary>
+    /// White gap between slices. Drawn as a stroke rather than by shortening each
+    /// sweep: a stroke keeps the gap width constant no matter how small the slice is.
+    /// </summary>
+    private static readonly Pen SliceSeparatorPen = CreateFrozenPen(Colors.White, 2.5);
+
+    private static readonly Pen SelectedSlicePen = CreateFrozenPen(Color.FromRgb(0x1F, 0x29, 0x37), 2.5);
 
     private readonly List<PieSlice> _slices = [];
     private ScanNodeSummary? _hoveredItem;
     private string? _lastToolTip;
     private Point _chartCenter;
     private double _outerRadius;
-    private double _innerRadius;
 
     public PieChartCanvas()
     {
@@ -112,9 +123,9 @@ public sealed class PieChartCanvas : FrameworkElement
             return;
         }
 
-        _chartCenter = new Point(bounds.Width / 2, bounds.Height / 2);
+        // Leave room below for the drop shadow.
+        _chartCenter = new Point(bounds.Width / 2, bounds.Height / 2 - ShadowOffsetY / 2);
         _outerRadius = Math.Min(bounds.Width, bounds.Height) / 2 - ChartPadding;
-        _innerRadius = _outerRadius * InnerRadiusRatio;
 
         if (_outerRadius <= 0)
         {
@@ -124,65 +135,139 @@ public sealed class PieChartCanvas : FrameworkElement
         var entries = GetSliceEntries();
         if (entries.Count == 0)
         {
-            DrawTrackRing(drawingContext);
             DrawEmptyState(drawingContext, bounds);
             return;
         }
 
-        DrawTrackRing(drawingContext);
+        // A soft disc under the pie so it reads as a lifted object rather than a
+        // flat stamp. Drawn before the slices, offset down by ShadowOffsetY.
+        drawingContext.DrawEllipse(
+            ShadowBrush,
+            null,
+            new Point(_chartCenter.X, _chartCenter.Y + ShadowOffsetY),
+            _outerRadius,
+            _outerRadius);
 
-        // Only dim inactive slices when selection maps to a chart slice
-        // (list view may select LevelItems outside ChartTopItems).
-        var hasSelectedSlice = false;
-        if (SelectedItem is { } selected)
-        {
-            foreach (var entry in entries)
-            {
-                if (entry.Item is not null
-                    && string.Equals(entry.Item.FullPath, selected.FullPath, StringComparison.OrdinalIgnoreCase))
-                {
-                    hasSelectedSlice = true;
-                    break;
-                }
-            }
-        }
-
-        var hasFocus = hasSelectedSlice || _hoveredItem is not null;
         var startAngle = -90d;
+        var labels = new List<PendingLabel>();
 
         for (var index = 0; index < entries.Count; index++)
         {
             var entry = entries[index];
-            var sweep = Math.Max(0, entry.Fraction * 360d - SliceGapDegrees);
+            var sweep = entry.Fraction * 360d;
             if (sweep <= 0.2)
             {
-                startAngle += entry.Fraction * 360d;
+                startAngle += sweep;
                 continue;
             }
 
-            var sliceStart = startAngle + SliceGapDegrees / 2;
             var isSelected = IsSelected(entry.Item);
             var isHovered = IsHovered(entry.Item);
-            var isActive = isSelected || isHovered;
             var sliceCenter = isHovered
-                ? GetExplodedCenter(_chartCenter, sliceStart, sweep, HoverExplodeDistance)
+                ? GetExplodedCenter(_chartCenter, startAngle, sweep, HoverExplodeDistance)
                 : _chartCenter;
 
-            var geometry = CreateDonutSlice(sliceCenter, _outerRadius, _innerRadius, sliceStart, sweep);
+            var geometry = CreatePieSlice(sliceCenter, _outerRadius, startAngle, sweep);
             var fill = entry.ColorIndex >= 0
                 ? ChartPalette.GetBrush(entry.ColorIndex)
                 : ChartPalette.OtherBrush;
 
-            var opacity = hasFocus && !isActive ? InactiveSliceOpacity : 1.0;
-            drawingContext.PushOpacity(opacity);
+            // No dimming of the other slices: on a solid pie it washes the whole
+            // disc out and makes the palette look muddy. The selected slice is
+            // marked by its outline instead.
             drawingContext.DrawGeometry(fill, isSelected ? SelectedSlicePen : SliceSeparatorPen, geometry);
-            drawingContext.Pop();
 
-            _slices.Add(new PieSlice(entry.Item, sliceStart, sweep, entry.ColorIndex));
-            startAngle += entry.Fraction * 360d;
+            if (entry.Item is { } item && entry.Fraction * 100 >= MinLabelPercent)
+            {
+                labels.Add(new PendingLabel(
+                    sliceCenter,
+                    startAngle + sweep / 2,
+                    entry.Fraction,
+                    item));
+            }
+
+            _slices.Add(new PieSlice(entry.Item, startAngle, sweep, entry.ColorIndex));
+            startAngle += sweep;
         }
 
-        DrawCenterHub(drawingContext);
+        // Labels last so the separators never draw over them.
+        foreach (var label in labels)
+        {
+            DrawSliceLabel(drawingContext, label);
+        }
+    }
+
+    /// <summary>
+    /// Percentage (and size, when it fits) centred on the slice's bisector. The
+    /// radius is a fraction of the outer radius so the text stays inside the wedge
+    /// as the chart resizes.
+    /// </summary>
+    private void DrawSliceLabel(DrawingContext drawingContext, PendingLabel label)
+    {
+        var anchor = PointOnCircle(label.Center, _outerRadius * LabelRadiusRatio, label.MidAngle);
+        var percent = label.Fraction * 100;
+        var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+
+        // Pick a text colour that survives on both light and dark fills.
+        var brush = IsLightFill(label.Item) ? DarkSliceLabelBrush : SliceLabelBrush;
+        var isMajor = percent >= 25;
+
+        var percentText = new FormattedText(
+            $"{percent:N1}%",
+            Thread.CurrentThread.CurrentCulture,
+            FlowDirection.LeftToRight,
+            isMajor ? BoldLabelTypeface : LabelTypeface,
+            isMajor ? 19 : 12,
+            brush,
+            dpi)
+        {
+            TextAlignment = TextAlignment.Center
+        };
+
+
+        var top = anchor.Y - percentText.Height / 2;
+        drawingContext.DrawText(percentText, new Point(anchor.X - percentText.Width / 2, top));
+
+        if (isMajor)
+        {
+            var sizeText = new FormattedText(
+                label.Item.Size,
+                Thread.CurrentThread.CurrentCulture,
+                FlowDirection.LeftToRight,
+                SubLabelTypeface,
+                11,
+                brush,
+                dpi)
+            {
+                TextAlignment = TextAlignment.Center
+            };
+
+            // Dim the secondary line slightly so the percentage stays dominant.
+            drawingContext.PushOpacity(0.8);
+            drawingContext.DrawText(
+                sizeText,
+                new Point(anchor.X - sizeText.Width / 2, top + percentText.Height + 1));
+            drawingContext.Pop();
+        }
+
+        drawingContext.Pop();
+    }
+
+    /// <summary>
+    /// Yellow and cyan fills are bright enough that white text disappears on them;
+    /// those slices get dark labels instead.
+    /// </summary>
+    private static bool IsLightFill(ScanNodeSummary item)
+    {
+        if (item.ColorIndex < 0)
+        {
+            return false;
+        }
+
+        var color = ChartPalette.GetColor(item.ColorIndex);
+        // Rec. 601 luma, 0..1.
+        var luma = (0.299 * color.R + 0.587 * color.G + 0.114 * color.B) / 255d;
+        return luma > 0.62;
     }
 
     protected override void OnMouseMove(MouseEventArgs e)
@@ -239,96 +324,10 @@ public sealed class PieChartCanvas : FrameworkElement
         e.Handled = true;
     }
 
-    private void DrawTrackRing(DrawingContext drawingContext)
-    {
-        var trackGeometry = CreateDonutSlice(_chartCenter, _outerRadius, _innerRadius, -90, 360);
-        drawingContext.DrawGeometry(TrackBrush, null, trackGeometry);
-    }
-
-    private void DrawCenterHub(DrawingContext drawingContext)
-    {
-        var hubRadius = _innerRadius - 2;
-        drawingContext.DrawEllipse(CenterBackgroundBrush, CenterHubPen, _chartCenter, hubRadius, hubRadius);
-
-        if (SelectedItem is { } selected)
-        {
-            DrawCenterText(
-                drawingContext,
-                TruncateLabel(selected.Name, 10),
-                selected.Size,
-                selected.PercentOfRoot);
-            return;
-        }
-
-        DrawCenterText(
-            drawingContext,
-            Loc.GetString("Chart_TotalUsage"),
-            ByteSizeFormatter.Format(TotalSizeBytes),
-            null);
-    }
-
-    private void DrawCenterText(DrawingContext drawingContext, string title, string value, string? subtitle)
-    {
-        var dpi = VisualTreeHelper.GetDpi(this).PixelsPerDip;
-        var maxWidth = Math.Max(48, (_innerRadius - 18) * 2);
-        var left = _chartCenter.X - maxWidth / 2;
-
-        var titleText = CreateCenterLine(title, 13, CenterTitleBrush, maxWidth, dpi);
-        var valueText = CreateCenterLine(value, 18, CenterValueBrush, maxWidth, dpi);
-        FormattedText? subtitleText = subtitle is null
-            ? null
-            : CreateCenterLine(subtitle, 12, CenterSubtitleBrush, maxWidth, dpi);
-
-        var lineGap = 3d;
-        var totalHeight = titleText.Height + lineGap + valueText.Height;
-        if (subtitleText is not null)
-        {
-            totalHeight += lineGap + subtitleText.Height;
-        }
-
-        var top = _chartCenter.Y - totalHeight / 2;
-        drawingContext.DrawText(titleText, new Point(left, top));
-
-        top += titleText.Height + lineGap;
-        drawingContext.DrawText(valueText, new Point(left, top));
-
-        if (subtitleText is null)
-        {
-            return;
-        }
-
-        top += valueText.Height + lineGap;
-        drawingContext.DrawText(subtitleText, new Point(left, top));
-    }
-
-    private static FormattedText CreateCenterLine(
-        string text,
-        double fontSize,
-        Brush brush,
-        double maxWidth,
-        double pixelsPerDip)
-    {
-        return new FormattedText(
-            text,
-            Thread.CurrentThread.CurrentCulture,
-            FlowDirection.LeftToRight,
-            fontSize >= 16 ? LabelTypeface : SubLabelTypeface,
-            fontSize,
-            brush,
-            pixelsPerDip)
-        {
-            MaxTextWidth = maxWidth,
-            TextAlignment = TextAlignment.Center,
-            Trimming = TextTrimming.CharacterEllipsis
-        };
-    }
 
     private void DrawEmptyState(DrawingContext drawingContext, Rect bounds)
     {
-        var hubRadius = _innerRadius - 2;
-        drawingContext.DrawEllipse(CenterBackgroundBrush, CenterHubPen, _chartCenter, hubRadius, hubRadius);
-
-        var maxWidth = Math.Max(48, (_innerRadius - 18) * 2);
+        var maxWidth = Math.Min(bounds.Width - 48, 320);
         var text = new FormattedText(
             Loc.GetString("Chart_EmptyState"),
             Thread.CurrentThread.CurrentCulture,
@@ -338,7 +337,7 @@ public sealed class PieChartCanvas : FrameworkElement
             EmptyStateBrush,
             VisualTreeHelper.GetDpi(this).PixelsPerDip)
         {
-            MaxTextWidth = maxWidth,
+            MaxTextWidth = Math.Max(48, maxWidth),
             TextAlignment = TextAlignment.Center
         };
 
@@ -390,7 +389,8 @@ public sealed class PieChartCanvas : FrameworkElement
         var dy = point.Y - _chartCenter.Y;
         var distance = Math.Sqrt(dx * dx + dy * dy);
 
-        if (distance > _outerRadius + HoverExplodeDistance || distance < _innerRadius - 2)
+        // Solid pie: anything inside the disc is a hit.
+        if (distance > _outerRadius + HoverExplodeDistance)
         {
             return null;
         }
@@ -458,40 +458,33 @@ public sealed class PieChartCanvas : FrameworkElement
         return angle;
     }
 
-    private static Geometry CreateDonutSlice(
+    /// <summary>
+    /// A solid wedge from the centre to the arc. The white separation between
+    /// slices comes from the stroke, not from shrinking the sweep, so the gap stays
+    /// the same width even for a 1% slice.
+    /// </summary>
+    private static Geometry CreatePieSlice(
         Point center,
-        double outerRadius,
-        double innerRadius,
+        double radius,
         double startAngleDeg,
         double sweepAngleDeg)
     {
         if (sweepAngleDeg >= 359.95)
         {
-            var outer = new EllipseGeometry(center, outerRadius, outerRadius);
-            var inner = new EllipseGeometry(center, innerRadius, innerRadius);
-            return new CombinedGeometry(GeometryCombineMode.Exclude, outer, inner);
+            return new EllipseGeometry(center, radius, radius);
         }
 
-        var outerStart = PointOnCircle(center, outerRadius, startAngleDeg);
-        var outerEnd = PointOnCircle(center, outerRadius, startAngleDeg + sweepAngleDeg);
-        var innerEnd = PointOnCircle(center, innerRadius, startAngleDeg + sweepAngleDeg);
-        var innerStart = PointOnCircle(center, innerRadius, startAngleDeg);
+        var arcStart = PointOnCircle(center, radius, startAngleDeg);
+        var arcEnd = PointOnCircle(center, radius, startAngleDeg + sweepAngleDeg);
 
-        var figure = new PathFigure { StartPoint = outerStart, IsClosed = true };
+        var figure = new PathFigure { StartPoint = center, IsClosed = true };
+        figure.Segments.Add(new LineSegment(arcStart, false));
         figure.Segments.Add(new ArcSegment(
-            outerEnd,
-            new Size(outerRadius, outerRadius),
+            arcEnd,
+            new Size(radius, radius),
             0,
             sweepAngleDeg > 180,
             SweepDirection.Clockwise,
-            true));
-        figure.Segments.Add(new LineSegment(innerEnd, true));
-        figure.Segments.Add(new ArcSegment(
-            innerStart,
-            new Size(innerRadius, innerRadius),
-            0,
-            sweepAngleDeg > 180,
-            SweepDirection.Counterclockwise,
             true));
 
         return new PathGeometry([figure]);
@@ -503,16 +496,6 @@ public sealed class PieChartCanvas : FrameworkElement
         return new Point(
             center.X + radius * Math.Cos(radians),
             center.Y + radius * Math.Sin(radians));
-    }
-
-    private static string TruncateLabel(string value, int maxChars)
-    {
-        if (value.Length <= maxChars)
-        {
-            return value;
-        }
-
-        return value[..Math.Max(1, maxChars - 1)] + "…";
     }
 
     private static SolidColorBrush CreateFrozenBrush(Color color)
@@ -530,6 +513,13 @@ public sealed class PieChartCanvas : FrameworkElement
     }
 
     private sealed record SliceEntry(ScanNodeSummary? Item, double Fraction, int ColorIndex);
+
+    /// <summary>A slice label held back until every wedge is drawn.</summary>
+    private sealed record PendingLabel(
+        Point Center,
+        double MidAngle,
+        double Fraction,
+        ScanNodeSummary Item);
 
     private sealed record PieSlice(
         ScanNodeSummary? Item,

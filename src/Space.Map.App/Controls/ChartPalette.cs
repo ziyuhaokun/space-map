@@ -4,21 +4,26 @@ namespace Space.Map.App.Controls;
 
 public static class ChartPalette
 {
+    /// <summary>
+    /// Categorical palette. Hues are spread far enough apart to stay distinguishable
+    /// side by side, and every colour keeps enough contrast against white for the
+    /// on-slice percentage labels to remain legible.
+    /// </summary>
     private static readonly Color[] Colors =
     [
-        Color.FromRgb(0x2F, 0x80, 0xED),
-        Color.FromRgb(0x27, 0xAE, 0x60),
-        Color.FromRgb(0xEB, 0x57, 0x57),
-        Color.FromRgb(0xF2, 0xC9, 0x4C),
-        Color.FromRgb(0x9B, 0x51, 0xE0),
-        Color.FromRgb(0x00, 0x8B, 0x8B),
-        Color.FromRgb(0xD9, 0x6C, 0x06),
-        Color.FromRgb(0x56, 0xCC, 0xF2)
+        Color.FromRgb(0x3B, 0x82, 0xF6),
+        Color.FromRgb(0x10, 0xB9, 0x81),
+        Color.FromRgb(0xEF, 0x44, 0x44),
+        Color.FromRgb(0xF5, 0x9E, 0x0B),
+        Color.FromRgb(0x8B, 0x5C, 0xF6),
+        Color.FromRgb(0x06, 0xB6, 0xD4),
+        Color.FromRgb(0xEC, 0x48, 0x99),
+        Color.FromRgb(0x84, 0xCC, 0x16)
     ];
 
     private static readonly SolidColorBrush[] Brushes = CreateBrushes(Colors);
 
-    public static SolidColorBrush OtherBrush { get; } = CreateBrush(Color.FromRgb(0x6B, 0x7A, 0x90));
+    public static SolidColorBrush OtherBrush { get; } = CreateBrush(Color.FromRgb(0x94, 0xA3, 0xB8));
 
     public static int Count => Colors.Length;
 
